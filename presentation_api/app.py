@@ -8,9 +8,17 @@ import flask_limiter.util
 from .views import bp_manifest, bp_search, bp_canvas
 from .extensions import manifest_factory
 
-
 def get_remote_address():
     return request.headers.get('X-Original-Forwarded-For', flask_limiter.util.get_remote_address())
+
+def register_extensions(app):
+    Limiter(app, key_func=get_remote_address)
+
+    # Configure manifest factory
+    manifest_factory.set_base_prezi_uri(app.config.get('BASE_URL'))
+    manifest_factory.set_base_image_uri(app.config.get('IMAGE_API_BASE_URL'))
+    manifest_factory.set_iiif_image_info(2.0, 2) # Version, ComplianceLevel
+
 
 def create_app(**config):
     opath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -26,13 +34,6 @@ def create_app(**config):
 
     if app.config['ENV'] == "development":
         app.debug = True
-
-    Limiter(app, key_func=get_remote_address)
-
-    # Configure manifest factory
-    manifest_factory.set_base_prezi_uri(app.config.get('BASE_URL'))
-    manifest_factory.set_base_image_uri(app.config.get('IMAGE_API_BASE_URL'))
-    manifest_factory.set_iiif_image_info(2.0, 2) # Version, ComplianceLevel
     
     if app.debug:
         manifest_factory.set_debug("error_on_warning")
@@ -45,6 +46,8 @@ def create_app(**config):
     bp_wrapper.register_blueprint(bp_canvas)
     bp_wrapper.register_blueprint(bp_search)
     app.register_blueprint(bp_wrapper, url_prefix=app.config.get('BASE_PATH'))
+
+    register_extensions(app)
 
     return app
 

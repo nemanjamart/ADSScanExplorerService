@@ -1,7 +1,6 @@
 from flask import Blueprint, current_app
 from presentation_api.models import Article, Page
 from presentation_api.extensions import manifest_factory
-
 # define the blueprint
 bp_canvas= Blueprint('canvas', __name__)
 
@@ -10,15 +9,15 @@ def get_canvas(article_id: str, page_id: str):
     with current_app.session_scope() as session:
         article = session.query(Article).filter_by(id=article_id).first()
         if article:
-            page = session.query(Page).filter_by(id=page_id).first()
+            page  = article.pages.filter(Page.id == page_id).first()
             if page:
-                canvas = manifest_factory.canvas(ident=page.id, label=page.label)
+                canvas = manifest_factory.canvas(ident=str(page.id), label=page.label)
                 canvas.height = page.height
                 canvas.width = page.width
 
-                annotation = canvas.annotation(ident=page.id)
+                annotation = canvas.annotation(ident=str(page.id))
 
-                image = annotation.image(ident=page.id, label=page.label, iiif=True)
+                image = annotation.image(ident=page.name, label=page.label, iiif=True)
                 image.format = page.format
                 image.height = page.height
                 image.width = page.width
