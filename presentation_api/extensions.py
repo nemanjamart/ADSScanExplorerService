@@ -1,6 +1,6 @@
-from iiif_prezi.factory import ManifestFactory
+from .manifest_factory import ManifestFactoryExtended
 from flask_compress import Compress
 
-manifest_factory = ManifestFactory()
+manifest_factory = ManifestFactoryExtended()
 compress = Compress()
 
