@@ -6,7 +6,7 @@ from presentation_api.models import Article, Page
 # define the blueprint
 bp_manifest = Blueprint('manifest', __name__)
 
-@bp_manifest.route('<string:article_id>/manifest', methods=['GET'])
+@bp_manifest.route('<string:article_id>/manifest.json', methods=['GET'])
 def get_manifest(article_id: str):
     with current_app.session_scope() as session:
         article = session.query(Article).filter_by(id=article_id).first()
