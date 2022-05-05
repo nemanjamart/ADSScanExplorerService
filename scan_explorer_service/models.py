@@ -69,7 +69,13 @@ class Article(Base):
     journal_volume_id = Column(UUIDType, ForeignKey(JournalVolume.id))
     pages = relationship('Page', secondary=page_article_association_table,
                          back_populates='articles', lazy='dynamic')
-
+    @property
+    def serialized(self):
+        """Return object data in serializeable format"""
+        return {
+            'id': self.id,
+            'bibcode': self.bibcode,
+        }
 
 class Page(Base):
     __tablename__ = 'page'

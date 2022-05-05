@@ -5,7 +5,7 @@ from .views import *
 from .extensions import *
 
 
-def register_extensions(app):
+def register_extensions(app: ADSFlask):
     """ Register extensions.
 
     Args:
@@ -19,12 +19,13 @@ def register_extensions(app):
     manifest_factory.set_iiif_image_info(2.0, 2)  # Version, ComplianceLevel
 
 
-def register_views(app):
+def register_views(app: ADSFlask):
     """ Register all views with the flask application.
     Args:
         app (ADSFlask): Application object
     """
     app.register_blueprint(bp_manifest)
+    app.register_blueprint(bp_metadata)
 
     @app.after_request
     def after_request(response):
