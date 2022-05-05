@@ -1,8 +1,6 @@
 import os
 import sys
-from flask import request
 from adsmutils import ADSFlask
-import flask_limiter.util
 from .views import *
 from .extensions import *
 
@@ -17,7 +15,6 @@ def register_extensions(app):
     limiter.init_app(app)
     discoverer.init_app(app)
     
-    manifest_factory.set_base_prezi_uri(app.config.get('BASE_URL'))
     manifest_factory.set_base_image_uri(app.config.get('IMAGE_API_BASE_URL'))
     manifest_factory.set_iiif_image_info(2.0, 2)  # Version, ComplianceLevel
 
@@ -27,10 +24,7 @@ def register_views(app):
     Args:
         app (ADSFlask): Application object
     """
-
-    base_path = app.config.get('BASE_PATH')
-    app.register_blueprint(bp_manifest, url_prefix=base_path)
-    app.register_blueprint(bp_search, url_prefix=base_path)
+    app.register_blueprint(bp_manifest)
 
     @app.after_request
     def after_request(response):

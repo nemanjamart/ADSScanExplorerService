@@ -1,6 +1,5 @@
-from iiif_prezi.factory import ManifestFactory, Sequence, Canvas, Image, Annotation
+from iiif_prezi.factory import ManifestFactory, Sequence, Canvas, Image, Annotation, Manifest
 from presentation_api.models import Article, Page
-from flask import request
 
 
 class ManifestFactoryExtended(ManifestFactory):
@@ -11,7 +10,8 @@ class ManifestFactoryExtended(ManifestFactory):
     """
 
     def create_manifest(self, article: Article):
-        manifest = self.manifest(ident = f'{article.id}/manifest.json', label="journal.volume")
+        manifest = self.manifest(
+            ident=f'{article.id}/manifest.json', label="journal.volume")
         manifest.description = 'journal.description'
         manifest.add_sequence(self.create_sequence(article))
         return manifest
@@ -42,3 +42,9 @@ class ManifestFactoryExtended(ManifestFactory):
         image.width = page.width
 
         return annotation
+
+    def add_search_service(self, manifest: Manifest, search_url: str):
+        context = 'http://iiif.io/api/search/1/context.json'
+        profile = 'http://iiif.io/api/search/1/search'
+        
+        manifest.add_service(ident=search_url, context=context, profile=profile)
