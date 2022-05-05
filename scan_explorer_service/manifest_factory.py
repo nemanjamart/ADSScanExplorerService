@@ -1,5 +1,5 @@
 from iiif_prezi.factory import ManifestFactory, Sequence, Canvas, Image, Annotation, Manifest
-from presentation_api.models import Article, Page
+from scan_explorer_service.models import Article, Page
 
 
 class ManifestFactoryExtended(ManifestFactory):

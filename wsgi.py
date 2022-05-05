@@ -1,5 +1,5 @@
 from werkzeug.serving import run_simple
-from presentation_api import app as application
+from scan_explorer_service import app as application
 
 
 if __name__ == "__main__":

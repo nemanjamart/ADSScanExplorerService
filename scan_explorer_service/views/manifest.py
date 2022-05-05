@@ -1,6 +1,6 @@
 from flask import Blueprint, current_app, jsonify, url_for, request
-from presentation_api.extensions import manifest_factory
-from presentation_api.models import Article, Page
+from scan_explorer_service.extensions import manifest_factory
+from scan_explorer_service.models import Article, Page
 from flask_discoverer import advertise
 from urllib import parse as urlparse
 
