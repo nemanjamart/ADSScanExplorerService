@@ -1,4 +1,5 @@
 import uuid
+from flask import current_app
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, UniqueConstraint, Enum
 from sqlalchemy.orm import relationship, Session
@@ -75,6 +76,8 @@ class Article(Base):
         return {
             'id': self.id,
             'bibcode': self.bibcode,
+            'pages': self.pages.count(),
+            'thumbnail': f'{current_app.config.get("IMAGE_API_BASE_URL")}/{self.pages.first().name}/square/480,480/0/default.png'
         }
 
 class Page(Base):
