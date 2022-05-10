@@ -8,6 +8,7 @@ bp_metadata = Blueprint('metadata', __name__, url_prefix='/service/metadata')
 @advertise(scopes=['get_articles'], rate_limit=[300, 3600*24])
 @bp_metadata.route('/articles', methods=['GET'])
 def get_articles():
+    """ Fetch all articles or all articles corresponding to a bibcode """
     with current_app.session_scope() as session:
         bibcode = request.args.get('bibcode')
         if bibcode:
@@ -22,6 +23,7 @@ def get_articles():
 @advertise(scopes=['get_article'], rate_limit=[300, 3600*24])
 @bp_metadata.route('/article', methods=['GET'])
 def get_article():
+    """ Tries to find an article that is an exact match of the provided bibcode"""
     with current_app.session_scope() as session:
         bibcode = request.args.get('bibcode')
         if bibcode:

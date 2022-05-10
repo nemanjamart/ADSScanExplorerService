@@ -5,7 +5,7 @@ from scan_explorer_service.models import Article, Page
 class ManifestFactoryExtended(ManifestFactory):
     """ Extended manifest factory.
 
-    Extension of the iff_prezi manifest factory with helper 
+    Extension of the iiif_prezi manifest factory with helper 
     functions used to create manifest objects from model.
     """
 
