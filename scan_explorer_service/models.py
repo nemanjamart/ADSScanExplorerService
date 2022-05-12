@@ -87,7 +87,6 @@ class Page(Base):
         self.name = name
         self.journal_volume_id = journal_volume_id
         self.color_type = PageColor.BW
-        self.parse_info_from_name(name)
 
     id = Column(UUIDType, default=uuid.uuid4,  primary_key=True)
     name = Column(String)
