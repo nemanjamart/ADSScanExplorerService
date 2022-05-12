@@ -36,7 +36,7 @@ class ManifestFactoryExtended(ManifestFactory):
     def create_image_annotation(self, page: Page):
         annotation: Annotation = self.annotation(ident=str(page.id))
         image: Image = annotation.image(
-            ident=page.name, label=page.label, iiif=True)
+            ident=page.image_path, label=page.label, iiif=True)
         image.format = page.format
         image.height = page.height
         image.width = page.width

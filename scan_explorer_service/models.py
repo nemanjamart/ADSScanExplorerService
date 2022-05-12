@@ -48,6 +48,8 @@ class JournalVolume(Base):
     type = Column(String)
     status = Column(Enum(VolumeStatus))
     file_hash = Column(String)
+    pages = relationship(
+        'Page', primaryjoin='JournalVolume.id==Page.journal_volume_id', back_populates='volume')
 
 
 page_article_association_table = Table('page2article', Base.metadata,
@@ -70,6 +72,7 @@ class Article(Base):
     journal_volume_id = Column(UUIDType, ForeignKey(JournalVolume.id))
     pages = relationship('Page', secondary=page_article_association_table,
                          back_populates='articles', lazy='dynamic')
+
     @property
     def serialized(self):
         """Return object data in serializeable format"""
@@ -77,8 +80,9 @@ class Article(Base):
             'id': self.id,
             'bibcode': self.bibcode,
             'pages': self.pages.count(),
-            'thumbnail': f'{current_app.config.get("IMAGE_API_BASE_URL")}/{self.pages.first().name}/square/480,480/0/default.png'
+            'thumbnail': f'{self.pages.first().image_url}/square/480,480/0/default.png'
         }
+
 
 class Page(Base):
     __tablename__ = 'page'
@@ -101,4 +105,17 @@ class Page(Base):
     articles = relationship(
         'Article', secondary=page_article_association_table, back_populates='pages')
 
+    volume = relationship('JournalVolume', back_populates='pages')
     UniqueConstraint(journal_volume_id, volume_running_page_num)
+
+    @property
+    def image_url(self):
+        image_api_url = current_app.config.get('IMAGE_API_BASE_URL')
+       
+        return f'{image_api_url}/{self.image_path}'
+    
+    @property
+    def image_path(self):
+        image_path = f'bitmaps%2F{self.volume.type}%2F{self.volume.journal}%2F{self.volume.volume}%2F600'
+        image_path = image_path.replace('.', '_')
+        return f'{image_path}%2F{self.name}'
