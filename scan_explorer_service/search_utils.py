@@ -69,6 +69,6 @@ class QueryBuilder():
             pagination: Pagination = article_query.group_by(
                 JournalVolume.id, Article.id).paginate(self.page, self.limit, False)
 
-            serialized = {'page': pagination.page, 'pageCount': pagination.pages, 'items': [
+            serialized = {'page': pagination.page, 'pageCount': pagination.pages, 'total': pagination.total, 'items': [
                 a.serialized | {'journalPage': self.queries.get('journalPage', 1)} for a in pagination.items]}
             return serialized
