@@ -46,7 +46,7 @@ class TestManifest(TestCaseDatabase):
             
 
     def test_get_manifest(self):
-        url = url_for("manifest.get_manifest", article_id=self.article.id)
+        url = url_for("manifest.get_manifest", id=self.article.id)
         r = self.client.get(url)
         data = json.loads(r.data)
 

@@ -1,6 +1,6 @@
 from flask import Blueprint, current_app, jsonify, url_for, request
 from scan_explorer_service.extensions import manifest_factory
-from scan_explorer_service.models import Article, Page
+from scan_explorer_service.models import Article, Page, JournalVolume
 from flask_discoverer import advertise
 from urllib import parse as urlparse
 
@@ -13,22 +13,25 @@ def before_request():
     manifest_factory.set_base_prezi_uri(base_uri)
 
 @advertise(scopes=['get_manifest'], rate_limit = [300, 3600*24])
-@bp_manifest.route('/<string:article_id>/manifest.json', methods=['GET'])
-def get_manifest(article_id: str):
+@bp_manifest.route('/<string:id>/manifest.json', methods=['GET'])
+def get_manifest(id: str):
     """ Creates an IIIF manifest from an article"""
     with current_app.session_scope() as session:
-        article = session.query(Article).filter_by(id=article_id).first()
-        if article:
-            manifest = manifest_factory.create_manifest(article)
+        article = session.query(Article).filter_by(id=id).one_or_none()
+        volume = session.query(JournalVolume).filter_by(id=id).one_or_none()
+        if article or volume:
+            if article:
+                manifest = manifest_factory.create_manifest(article)
+            else:
+                manifest = manifest_factory.create_manifest_from_volume(volume)
 
             # TODO: Check if OCR is available before adding search service..
-            search_url = urlparse.urljoin(request.url_root, url_for('manifest.search', article_id = article_id))
+            search_url = urlparse.urljoin(request.url_root, url_for('manifest.search', id = id))
             manifest_factory.add_search_service(manifest, search_url)
 
             return manifest.toJSON(top=True)
         else:
             return jsonify(exception='Article not found'), 404
-
 
 @advertise(scopes=['get_canvas'], rate_limit = [300, 3600*24])
 @bp_manifest.route('/canvas/<string:page_id>.json', methods=['GET'])
