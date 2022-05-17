@@ -51,10 +51,21 @@ class JournalVolume(Base, Timestamp):
     status = Column(Enum(VolumeStatus))
     status_message = Column(String)
     file_hash = Column(String)
+
+    articles = relationship(
+        'Article', primaryjoin='JournalVolume.id==Article.journal_volume_id', back_populates='volume')
     pages = relationship(
         'Page', primaryjoin='JournalVolume.id==Page.journal_volume_id', back_populates='volume', order_by="Page.volume_running_page_num")
 
     UniqueConstraint(journal, volume)
+
+    @property
+    def serialized(self):
+        """Return object data in serializeable format"""
+        return {
+            'journal': self.journal,
+            'volume': self.volume,
+        }
 
 
 page_article_association_table = Table('page2article', Base.metadata,
@@ -77,6 +88,8 @@ class Article(Base, Timestamp):
     id = Column(UUIDType, default=uuid.uuid4, primary_key=True)
     bibcode = Column(String)
     journal_volume_id = Column(UUIDType, ForeignKey(JournalVolume.id))
+
+    volume = relationship('JournalVolume', back_populates='articles')
     pages = relationship('Page', secondary=page_article_association_table,
                          back_populates='articles', lazy='dynamic', order_by="Page.volume_running_page_num")
 
@@ -85,9 +98,11 @@ class Article(Base, Timestamp):
         """Return object data in serializeable format"""
         return {
             'id': self.id,
+            'type': 'article',
             'bibcode': self.bibcode,
             'pages': self.pages.count(),
-            'thumbnail': f'{self.pages.first().image_url}/square/480,480/0/default.png'
+            'thumbnail': self.pages.first().thumbnail_url,
+            'journal_volume_id': self.journal_volume_id
         }
 
 
@@ -128,3 +143,7 @@ class Page(Base, Timestamp):
         image_path = f'bitmaps%2F{self.volume.type}%2F{self.volume.journal}%2F{self.volume.volume}%2F600'
         image_path = image_path.replace('.', '_')
         return f'{image_path}%2F{self.name}'
+
+    @property
+    def thumbnail_url(self):
+        return f'{self.image_url}/square/480,480/0/default.png'

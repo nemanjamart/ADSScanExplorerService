@@ -1,6 +1,7 @@
-from flask import Blueprint, current_app, jsonify, url_for, request
-from scan_explorer_service.models import Article, Page
+from flask import Blueprint, current_app, jsonify, request
+from scan_explorer_service.models import Article, JournalVolume, Page
 from flask_discoverer import advertise
+from scan_explorer_service.search_utils import QueryBuilder
 
 bp_metadata = Blueprint('metadata', __name__, url_prefix='/service/metadata')
 
@@ -27,10 +28,19 @@ def get_article():
     with current_app.session_scope() as session:
         bibcode = request.args.get('bibcode')
         if bibcode:
-            article = session.query(Article).filter(Article.bibcode == bibcode).first()
+            article = session.query(Article).filter(
+                Article.bibcode == bibcode).first()
             if article:
                 return jsonify(article.serialized)
             else:
                 return ''
         else:
             return jsonify(message='No bibcode provided'), 400
+
+
+@advertise(scopes=['search'], rate_limit=[300, 3600*24])
+@bp_metadata.route('/search', methods=['GET'])
+def search():
+    qb = QueryBuilder(request)
+    result = qb.query(current_app)
+    return jsonify(result)
