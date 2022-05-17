@@ -2,6 +2,7 @@ from flask import Blueprint, current_app, jsonify, url_for, request
 from scan_explorer_service.extensions import manifest_factory
 from scan_explorer_service.models import Article, Page, JournalVolume
 from flask_discoverer import advertise
+from scan_explorer_service.elasticsearch import volume_full_text_search, article_full_text_search
 from urllib import parse as urlparse
 
 bp_manifest = Blueprint('manifest', __name__, url_prefix='/service/manifest')
@@ -41,38 +42,40 @@ def get_canvas(page_id: str):
         page = session.query(Page).filter(Page.id == page_id).first()
 
         if page:
-            page = manifest_factory.create_canvas(page)
+            page = manifest_factory.get_or_create_canvas(page)
             return page.toJSON(top=True)
         else:
             return jsonify(exception='Page not found'), 404
 
 
 @advertise(scopes=['search'], rate_limit = [300, 3600*24])
-@bp_manifest.route('/<string:article_id>/search', methods=['GET'])
-def search(article_id: str):
+@bp_manifest.route('/<string:id>/search', methods=['GET'])
+def search(id: str):
     """ Searches the content of an article """
     with current_app.session_scope() as session:
-        article = session.query(Article).filter_by(id=article_id).first()
-        if article:
+        article = session.query(Article).filter_by(id=id).one_or_none()
+        volume = session.query(JournalVolume).filter_by(id=id).one_or_none()
+        if article or volume:
             query = request.args.get('q')
             if query and len(query) > 0:
                 
-
-                # TODO: Here we should perform a search in the OCR text.
-                # We need to know the page, x, y coordinates, width & height of
-                # the OCR text matching the query.
-
-                # Below code is an hard coded example.
                 annotation_list = manifest_factory.annotationList(request.url)
                 annotation_list.resources = []
-                annotation = annotation_list.annotation('any_id')
-                annotation.text('near-infrared')
-                page = article.pages.first()
-                canvas_slice_url = ''.join([url_for('manifest.get_canvas', page_id=page.id), '#xywh=675,2500,520,102'])
-                annotation.on = urlparse.urljoin(request.url_root, canvas_slice_url)
+                results = []
+                if article:
+                    results = article_full_text_search(id, query)
+                else:
+                    results = volume_full_text_search(id, query)
+
+                for res in results:
+                    annotation = annotation_list.annotation(res['page_id'])
+                    canvas_slice_url = ''.join([url_for('manifest.get_canvas', page_id=res['page_id'])])
+                    annotation.on = urlparse.urljoin(request.url_root, canvas_slice_url)
+                    highlight_text = "<br><br>".join(res['highlight']).replace("em>", "b>")
+                    annotation.text(highlight_text, format="text/html")
 
                 return annotation_list.toJSON(top=True)
             else:
                 return jsonify(exception='No search query specified'), 400
         else:
-            return jsonify(exception='Article not found'), 404
+            return jsonify(exception='Article or volume not found'), 404
