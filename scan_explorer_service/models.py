@@ -55,7 +55,7 @@ class JournalVolume(Base, Timestamp):
     articles = relationship(
         'Article', primaryjoin='JournalVolume.id==Article.journal_volume_id', back_populates='volume')
     pages = relationship(
-        'Page', primaryjoin='JournalVolume.id==Page.journal_volume_id', back_populates='volume', order_by="Page.volume_running_page_num")
+        'Page', primaryjoin='JournalVolume.id==Page.journal_volume_id', back_populates='volume',  lazy='dynamic', order_by="Page.volume_running_page_num")
 
     UniqueConstraint(journal, volume)
 
@@ -63,8 +63,11 @@ class JournalVolume(Base, Timestamp):
     def serialized(self):
         """Return object data in serializeable format"""
         return {
+            'id': self.id,
             'journal': self.journal,
             'volume': self.volume,
+            'pages': self.pages.count(),
+            'thumbnail': self.pages.first().thumbnail_url
         }
 
 

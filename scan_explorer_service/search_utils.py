@@ -1,31 +1,20 @@
-
-
 from scan_explorer_service.models import Article, JournalVolume, Page
 from flask_sqlalchemy import Pagination
-
-
-def ilike_filter(col, value):
-    return col.ilike(f'{value}%')
-
-
-def exact_filter(col, value):
-    return col == value
 
 
 class QueryBuilder():
     # Supported Journal queries
     journal_volume_query_def = dict(
-        {'bibstem': lambda val: ilike_filter(JournalVolume.journal, val)}
+
     )
 
-    # Supported article queries
-    article_query_def = dict(
-        {'bibcode': lambda val: ilike_filter(Article.bibcode, val)}
-    )
+    article_query_def = dict({
+        'bibcode': lambda val: Article.bibcode.ilike(f'{val}%'),
+        'bibstem': lambda val: Article.bibcode.ilike(f'%{val}%')
+    })
 
     page_query_def = dict(
-        {'journalPage': lambda val: exact_filter(
-            Page.volume_running_page_num, val)}
+        {'journalPage': lambda val: Page.volume_running_page_num == val}
     )
 
     def __init__(self, request):
@@ -69,6 +58,9 @@ class QueryBuilder():
             pagination: Pagination = article_query.group_by(
                 JournalVolume.id, Article.id).paginate(self.page, self.limit, False)
 
-            serialized = {'page': pagination.page, 'pageCount': pagination.pages, 'total': pagination.total, 'items': [
-                a.serialized | {'journalPage': self.queries.get('journalPage', 1)} for a in pagination.items]}
-            return serialized
+            collections = set()
+            [collections.add(
+                article.volume) or article for article in pagination.items if article.journal_volume_id not in collections]
+
+            return {'page': pagination.page, 'pageCount': pagination.pages, 'total': pagination.total, 'articles': [
+                a.serialized | {'journalPage': self.queries.get('journalPage', 1)} for a in pagination.items], 'collections': [v.serialized for v in collections]}
