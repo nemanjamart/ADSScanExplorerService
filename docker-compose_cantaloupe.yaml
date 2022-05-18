@@ -3,16 +3,12 @@ networks:
   ads_scan_explorer_network:
       name: ads_scan_explorer_network
 services:
-  ads_scan_explorer_pipeline:
-    build: .
+  ads_scan_explorer_cantaloupe:
     image: uclalibrary/cantaloupe:5.0.4-1
     container_name: cantaloupe
     ports:
       - "8182:8182"
     volumes:
       - ./cantaloupe.properties:/etc/cantaloupe.properties
-    environment:
-      - "CANTALOUPE_S3SOURCE_SECRET_KEY=<<<CHANGE-ME>>>"
-      - "CANTALOUPE_S3SOURCE_ACCESS_KEY_ID=<<<CHANGE-ME>>>" 
     networks:
       - ads_scan_explorer_network
