@@ -11,3 +11,5 @@ SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 ELASTIC_SEARCH_URL = 'http://es:9200'
 ELASTIC_SEARCH_INDEX = 'scan-explorer'
+
+ADS_API_URL = 'https://api.adsabs.harvard.edu/v1/search/query'

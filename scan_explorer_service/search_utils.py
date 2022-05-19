@@ -1,66 +1,56 @@
+import os
+import requests
 from scan_explorer_service.models import Article, JournalVolume, Page
 from flask_sqlalchemy import Pagination
+from flask import current_app
 
 
-class QueryBuilder():
-    # Supported Journal queries
-    journal_volume_query_def = dict(
 
-    )
+journal_volume_query_translations = dict({
+    'bibstem': lambda val: JournalVolume.journal.ilike(f'{val}%'),
+    'journal': lambda val: JournalVolume.journal.ilike(f'{val}%'),
+    'volume': lambda val: JournalVolume.volume.ilike(f'%{val}%'),
+})
 
-    article_query_def = dict({
-        'bibcode': lambda val: Article.bibcode.ilike(f'{val}%'),
-        'bibstem': lambda val: Article.bibcode.ilike(f'%{val}%')
-    })
+article_query_translations = dict({
+    'bibcode': (lambda val: Article.bibcode.ilike(f'{val}%')),
+    'bibstem': (lambda val: Article.bibcode.ilike(f'%{val}%'))
+})
 
-    page_query_def = dict(
-        {'journalPage': lambda val: Page.volume_running_page_num == val}
-    )
+page_query_translations = dict({
+    'page': lambda val: Page.label == val,
+    'page_collection': lambda val: Page.volume_running_page_num == val
+})
 
-    def __init__(self, request):
-        qs = request.args.get('q')
-        qs_split = list(qs.split())
-        self.queries = dict(kv.split(':') for kv in qs_split)
 
-        # Intersection of cient queries and supported queries
-        self.journal_volume_queries = {
-            k: v for k, v in self.journal_volume_query_def.items() if k in self.queries}
-        self.article_queries = {
-            k: v for k, v in self.article_query_def.items() if k in self.queries}
-        self.page_queries = {
-            k: v for k, v in self.page_query_def.items() if k in self.queries}
+def parse_query_args(args):
+    qs = args.get('q', '', str)
+    qs_arr = [q for q in qs.split() if ':' in q]
+    qs_dict = dict(kv.split(':') for kv in qs_arr)
 
-        self.page = int(request.args.get('page', 1))
-        self.limit = int(request.args.get('limit', 15))
+    page = args.get('page', 1, int)
+    limit = args.get('limit', 10, int)
 
-        if self.page < 1 or self.limit < 1:
-            raise Exception("Invalid page")
+    return qs_dict, page, limit
 
-    def query(self, app):
-        with app.session_scope() as session:
 
-            article_query = session.query(Article)
-            for query_key, filter_func in self.article_queries.items():
-                article_query = article_query.filter(
-                    filter_func(self.queries.get(query_key)))
+def serialize_result(db_session, result: Pagination):
+    return {'page': result.page, 'pageCount': result.pages, 'limit': result.per_page, 'total': result.total, 'items': [
+        item.serialized | fetch_ads_metadata(db_session, item.id) for item in result.items]}
 
-            article_query = article_query.join(JournalVolume)
-            for query_key, filter_func in self.journal_volume_queries.items():
-                article_query = article_query.filter(
-                    filter_func(self.queries.get(query_key)))
 
-            if len(self.page_queries) > 0:
-                article_query = article_query.join(Page)
-                for query_key, filter_func in self.page_queries.items():
-                    article_query = article_query.filter(
-                        filter_func(self.queries.get(query_key)))
+def fetch_ads_metadata(session, uuid: str):
+    auth_token = os.getenv('ADS_API_AUTH_TOKEN')
+    if auth_token:
+        article = session.query(Article).filter_by(id=uuid).one_or_none()
+        if article:
+            params = {'q': f'bibcode:{article.bibcode}', 'fl':'title,author'}
+            headers = {'Authorization': f'Bearer {auth_token}'}
+            response = requests.get(current_app.config.get('ADS_API_URL'), params, headers=headers).json()
+            docs = response.get('response').get('docs')
 
-            pagination: Pagination = article_query.group_by(
-                JournalVolume.id, Article.id).paginate(self.page, self.limit, False)
-
-            collections = set()
-            [collections.add(
-                article.volume) or article for article in pagination.items if article.journal_volume_id not in collections]
-
-            return {'page': pagination.page, 'pageCount': pagination.pages, 'total': pagination.total, 'articles': [
-                a.serialized | {'journalPage': self.queries.get('journalPage', 1)} for a in pagination.items], 'collections': [v.serialized for v in collections]}
+            if docs:
+                return docs[0]
+            
+            
+    return {}
