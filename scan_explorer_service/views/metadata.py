@@ -45,13 +45,19 @@ def get_article():
 def article_search():
     qs_dict, page, limit = parse_query_args(request.args)
     query_trans = {key: filter_func for key, filter_func in article_query_translations.items() if key in qs_dict.keys()}
+    jv_query_trans = {key: filter_func for key, filter_func in journal_volume_query_translations.items() if key in qs_dict.keys()}
 
     with current_app.session_scope() as session:
         query = session.query(Article)
         for key, filter_func in query_trans.items():
             query = query.filter(filter_func(qs_dict.get(key)))
-        
-        result: Pagination = query.group_by(Article.id).paginate(page, limit, False)
+
+        if len(jv_query_trans) > 0:
+            query = query.join(JournalVolume)
+            for key, filter_func in jv_query_trans.items():
+                query = query.filter(filter_func(qs_dict.get(key)))
+
+        result: Pagination = query.group_by(Article.id, JournalVolume.id).paginate(page, limit, False)
 
         return jsonify(serialize_result(session, result))
 

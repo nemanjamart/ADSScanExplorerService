@@ -53,7 +53,7 @@ class JournalVolume(Base, Timestamp):
     file_hash = Column(String)
 
     articles = relationship(
-        'Article', primaryjoin='JournalVolume.id==Article.journal_volume_id', back_populates='volume')
+        'Article', primaryjoin='JournalVolume.id==Article.journal_volume_id', back_populates='journal_volume')
     pages = relationship(
         'Page', primaryjoin='JournalVolume.id==Page.journal_volume_id', back_populates='volume',  lazy='dynamic', order_by="Page.volume_running_page_num")
 
@@ -92,7 +92,7 @@ class Article(Base, Timestamp):
     bibcode = Column(String)
     journal_volume_id = Column(UUIDType, ForeignKey(JournalVolume.id))
 
-    volume = relationship('JournalVolume', back_populates='articles')
+    journal_volume = relationship('JournalVolume', back_populates='articles')
     pages = relationship('Page', secondary=page_article_association_table,
                          back_populates='articles', lazy='dynamic', order_by="Page.volume_running_page_num")
 
