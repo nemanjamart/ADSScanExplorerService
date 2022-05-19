@@ -8,7 +8,10 @@ services:
     container_name: cantaloupe
     ports:
       - "8182:8182"
-    volumes:
-      - ./cantaloupe.properties:/etc/cantaloupe.properties
+    environment:
+      - "CANTALOUPE_SOURCE_STATIC=S3Source"
+      - "CANTALOUPE_S3SOURCE_BASICLOOKUPSTRATEGY_BUCKET_NAME=scan-explorer" 
+      - "CANTALOUPE_S3SOURCE_ACCESS_KEY_ID=CHANGE_ME"
+      - "CANTALOUPE_S3SOURCE_SECRET_KEY=CHANGE_ME"
     networks:
       - ads_scan_explorer_network
