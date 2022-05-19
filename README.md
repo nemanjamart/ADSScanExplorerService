@@ -4,7 +4,7 @@
 
 ### ADSScanExplorerService
 
-Start the service by running the docker compose. Make sure to set the correct urls to the db and ElasticSearch instance.
+Start the service by running the docker compose. Make sure to set the correct urls to the db and ElasticSearch instance in config.py
 ```
 docker compose -f docker-compose.yaml up -d
 ```
