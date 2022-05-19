@@ -3,7 +3,7 @@ networks:
   ads_scan_explorer_network:
       name: ads_scan_explorer_network
 services:
-  ads_scan_explorer:
+  ads_scan_explorer_service:
     build: .
     image: ads_scan_explorer_service:latest
     container_name: ads_scan_explorer_service
