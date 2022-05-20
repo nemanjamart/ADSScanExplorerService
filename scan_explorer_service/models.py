@@ -34,6 +34,18 @@ class PageType(enum.Enum):
     Insert = 4
     Plate = 5
 
+    @classmethod
+    def from_string(self, val: str):
+        elist = [{'name': e.name, 'value': e.value, 'enum': e} for e in PageType]
+
+        for edict in elist:
+            if edict.get('name').lower() == val.lower():
+                return edict.get('enum')
+            elif val.isnumeric() and int(val) == edict.get('value'):
+                return edict.get('enum')
+
+        return PageType.Normal
+
 class JournalVolume(Base, Timestamp):
     
     def __init__(self, type, journal, volume):
@@ -55,7 +67,7 @@ class JournalVolume(Base, Timestamp):
     articles = relationship(
         'Article', primaryjoin='JournalVolume.id==Article.journal_volume_id', back_populates='journal_volume')
     pages = relationship(
-        'Page', primaryjoin='JournalVolume.id==Page.journal_volume_id', back_populates='volume',  lazy='dynamic', order_by="Page.volume_running_page_num")
+        'Page', primaryjoin='JournalVolume.id==Page.journal_volume_id', back_populates='journal_volume',  lazy='dynamic', order_by="Page.volume_running_page_num")
 
     UniqueConstraint(journal, volume)
 
@@ -128,25 +140,35 @@ class Page(Base, Timestamp):
     height = Column(Integer)
     journal_volume_id = Column(UUIDType, ForeignKey(JournalVolume.id))
     volume_running_page_num = Column(Integer)
-    articles = relationship(
-        'Article', secondary=page_article_association_table, back_populates='pages')
+    articles = relationship('Article', secondary=page_article_association_table, back_populates='pages')
+    journal_volume = relationship('JournalVolume', back_populates='pages')
 
-    volume = relationship('JournalVolume', back_populates='pages')
     UniqueConstraint(journal_volume_id, volume_running_page_num)
     UniqueConstraint(journal_volume_id, name)
 
     @property
     def image_url(self):
         image_api_url = current_app.config.get('IMAGE_API_BASE_URL')
-       
         return f'{image_api_url}/{self.image_path}'
     
     @property
     def image_path(self):
-        image_path = f'bitmaps%2F{self.volume.type}%2F{self.volume.journal}%2F{self.volume.volume}%2F600'
+        image_path = f'bitmaps%2F{self.journal_volume.type}%2F{self.journal_volume.journal}%2F{self.journal_volume.volume}%2F600'
         image_path = image_path.replace('.', '_')
         return f'{image_path}%2F{self.name}'
 
     @property
     def thumbnail_url(self):
         return f'{self.image_url}/square/480,480/0/default.png'
+
+    @property
+    def serialized(self):
+        """Return object data in serializeable format"""
+        return {
+            'id': self.id,
+            'label': self.label,
+            'journal_volume_id': self.journal_volume_id,
+            'volume_page_num': self.volume_running_page_num,
+            'articles': [a.id for a in self.articles],
+            'thumbnail': self.thumbnail_url
+        }

@@ -1,7 +1,8 @@
 import os
 import requests
-from scan_explorer_service.models import Article, JournalVolume, Page
+from scan_explorer_service.models import Article, JournalVolume, Page, PageType
 from flask_sqlalchemy import Pagination
+from sqlalchemy import func
 from flask import current_app
 
 
@@ -19,7 +20,8 @@ article_query_translations = dict({
 
 page_query_translations = dict({
     'page': lambda val: Page.label == val,
-    'page_collection': lambda val: Page.volume_running_page_num == val
+    'page_collection': lambda val: Page.volume_running_page_num == val,
+    'pagetype': lambda val: Page.page_type == PageType.from_string(val)
 })
 
 

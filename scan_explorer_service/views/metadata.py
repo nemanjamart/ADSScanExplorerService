@@ -83,3 +83,31 @@ def collection_search():
         result: Pagination = query.group_by(JournalVolume.id).paginate(page, limit, False)
 
         return jsonify(serialize_result(session, result))
+
+
+@advertise(scopes=['page_search'], rate_limit=[300, 3600*24])
+@bp_metadata.route('/page/search', methods=['GET'])
+def page_search():
+    qs_dict, page, limit = parse_query_args(request.args)
+    query_trans = {key: filter_func for key, filter_func in page_query_translations.items() if key in qs_dict.keys()}
+    a_query_trans = {key: filter_func for key, filter_func in article_query_translations.items() if key in qs_dict.keys()}
+    jw_query_trans = {key: filter_func for key, filter_func in journal_volume_query_translations.items() if key in qs_dict.keys()}
+
+    with current_app.session_scope() as session:
+        query = session.query(Page)
+        for key, filter_func in query_trans.items():
+            query = query.filter(filter_func(qs_dict.get(key)))
+        
+        if len(a_query_trans) > 0:
+            query = query.join(Article, Page.articles)
+            for key, filter_func in a_query_trans.items():
+                query = query.filter(filter_func(qs_dict.get(key)))
+
+        if len(jw_query_trans) > 0:
+            query = query.join(JournalVolume)
+            for key, filter_func in jw_query_trans.items():
+                query = query.filter(filter_func(qs_dict.get(key)))
+                
+        result: Pagination = query.group_by(Page.id).paginate(page, limit, False)
+
+        return jsonify(serialize_result(session, result))
