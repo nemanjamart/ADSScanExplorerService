@@ -67,7 +67,7 @@ class ManifestFactoryExtended(ManifestFactory):
         canvas_dict = self.get_canvas_dict()
         if(page.id in canvas_dict.keys()):
             return canvas_dict[page.id]
-        canvas: Canvas = self.canvas(ident=str(page.id), label=page.label)
+        canvas: Canvas = self.canvas(ident=str(page.id), label=f'p. {page.label}')
         canvas.height = page.height
         canvas.width = page.width
         annotation = self.create_image_annotation(page)
@@ -79,7 +79,7 @@ class ManifestFactoryExtended(ManifestFactory):
     def create_image_annotation(self, page: Page):
         annotation: Annotation = self.annotation(ident=str(page.id))
         image: Image = annotation.image(
-            ident=page.image_path, label=page.label, iiif=True)
+            ident=page.image_path, label=f'p. {page.label}', iiif=True)
         image.format = page.format
         image.height = page.height
         image.width = page.width

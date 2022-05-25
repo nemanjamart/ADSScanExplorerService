@@ -7,7 +7,7 @@ from flask_sqlalchemy import Pagination
 from scan_explorer_service.elasticsearch import text_search_aggregate
 
 
-bp_metadata = Blueprint('metadata', __name__, url_prefix='/service/metadata')
+bp_metadata = Blueprint('metadata', __name__, url_prefix='/metadata')
 
 
 @advertise(scopes=['get_articles'], rate_limit=[300, 3600*24])
