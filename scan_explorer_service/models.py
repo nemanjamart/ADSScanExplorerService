@@ -155,7 +155,10 @@ class Page(Base, Timestamp):
     def image_path(self):
         image_path = f'bitmaps%2F{self.journal_volume.type}%2F{self.journal_volume.journal}%2F{self.journal_volume.volume}%2F600'
         image_path = image_path.replace('.', '_')
-        return f'{image_path}%2F{self.name}'
+        image_path += f'%2F{self.name}'
+        if self.color_type != PageColor.BW:
+            image_path += '.tif'
+        return image_path
 
     @property
     def thumbnail_url(self):
