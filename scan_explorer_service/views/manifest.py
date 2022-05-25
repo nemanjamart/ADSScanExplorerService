@@ -5,7 +5,7 @@ from flask_discoverer import advertise
 from scan_explorer_service.elasticsearch import volume_full_text_search, article_full_text_search
 from urllib import parse as urlparse
 
-bp_manifest = Blueprint('manifest', __name__, url_prefix='/service/manifest')
+bp_manifest = Blueprint('manifest', __name__, url_prefix='/manifest')
 
 
 @bp_manifest.before_request

@@ -5,7 +5,7 @@ from flask_discoverer import advertise
 from scan_explorer_service.search_utils import *
 from flask_sqlalchemy import Pagination
 
-bp_metadata = Blueprint('metadata', __name__, url_prefix='/service/metadata')
+bp_metadata = Blueprint('metadata', __name__, url_prefix='/metadata')
 
 
 @advertise(scopes=['get_articles'], rate_limit=[300, 3600*24])
