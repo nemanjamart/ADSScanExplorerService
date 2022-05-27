@@ -3,6 +3,7 @@ import requests
 from scan_explorer_service.models import Article, JournalVolume, Page, PageType
 from flask_sqlalchemy import Pagination
 from flask import current_app
+import shlex
 
 
 
@@ -26,7 +27,7 @@ page_query_translations = dict({
 
 def parse_query_args(args):
     qs = args.get('q', '', str)
-    qs_arr = [q for q in qs.split() if ':' in q]
+    qs_arr = [q for q in shlex.split(qs) if ':' in q]
     qs_dict = dict(kv.split(':') for kv in qs_arr)
 
     page = args.get('page', 1, int)
