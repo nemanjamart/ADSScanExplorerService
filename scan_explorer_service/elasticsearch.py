@@ -2,6 +2,7 @@ from typing import Iterator, List
 from elasticsearch import Elasticsearch
 from flask import current_app
 from enum import Enum
+from typing import Union
 
 
 class EsFields(str, Enum):
@@ -10,84 +11,24 @@ class EsFields(str, Enum):
     page_id = 'page_id'
 
 
-def volume_full_text_search(id: str, text: str) -> Iterator[str]:
-    id_query = {
-        "terms": {
-            "volume_id": id
-        }
-    }
-    query = create_query(id_query, text)
-    return es_search(query)
-
-
-def article_full_text_search(id: str, text: str):
-    id_query = {
-        "terms": {
-            "article_ids": id
-        }
-    }
-    query = create_query(id_query, text)
-    return es_search(query)
-
-
-def create_query(id_query: dict, text: str) -> dict:
-    query = {
+def create_base_query(text: str) -> dict:
+    return {
         "query": {
             "bool": {
-                "must": [
-                    id_query,
-                    {
-                        "query_string": {
-                            "query": text,
-                            "default_field": "text",
-                            "default_operator": "AND"
-                        }
+                "must": {
+                    "query_string": {
+                        "query": text,
+                        "default_field": "text",
+                        "default_operator": "AND"
                     }
-                ]
+                }
             }
-        },
-        "highlight": {
-            "fields": {
-                "text": {}
-            },
-            "type": "unified"
         }
     }
-    return query
 
 
-def es_text_search(query: dict) -> Iterator[str]:
-    resp = es_search(query)
-    for hit in resp['hits']['hits']:
-        res = {
-            "page_id": hit['_source']['page_id'],
-            "highlight": hit['highlight']['text']
-        }
-        yield res
-
-
-def es_aggs_search(query: dict) -> Iterator[str]:
-    resp = es_search(query)
-    return resp
-
-
-def es_search(query: dict) -> Iterator[str]:
-    es = Elasticsearch(current_app.config.get('ELASTIC_SEARCH_URL'))
-    resp = es.search(index=current_app.config.get(
-        'ELASTIC_SEARCH_INDEX'), body=query)
-    return resp
-
-
-def text_search_aggregate_ids(text: str, filter_field: EsFields, filter_values: List[str]) -> List[str]:
-    es_result = text_search_aggregate(text, filter_field, filter_values)
-    es_buckets = es_result['aggregations']['ids']['buckets']
-    key_list = [b.get('key') for b in es_buckets]
-    return key_list
-
-
-def text_search_aggregate(text: str, filter_field: EsFields, filter_values: List[str]) -> Iterator[str]:
-
-    query = {
+def create_base_query_filter(text: str, filter_field: EsFields, filter_values: List[str]) -> dict:
+    return {
         "query": {
             "bool": {
                 "must": {
@@ -103,29 +44,65 @@ def text_search_aggregate(text: str, filter_field: EsFields, filter_values: List
                     }
                 }
             }
+        }
+    }
+
+
+def append_aggregate(query: dict, agg_field):
+    query['aggs'] = {
+        "total_count": {
+            "cardinality": {
+                "field": agg_field
+            }
         },
-        "aggs": {
-            "total_count": {
-                "cardinality": {
-                    "field": filter_field
-                }
-            },
-            "ids": {
-                "terms": {"field": filter_field},
-                "aggs": {
+        "ids": {
+            "terms": {"field": agg_field},
+            "aggs": {
+                "bucket_sort": {
                     "bucket_sort": {
-                        "bucket_sort": {
-                            "sort": [{
-                                "_count": {
-                                    "order": "desc"
-                                }
-                            }]
-                        }
+                        "sort": [{
+                            "_count": {
+                                "order": "desc"
+                            }
+                        }]
                     }
                 }
             }
-        },
-        "size": 0
-    }
+        }
+    },
 
-    return es_search(query)
+    return query
+
+
+def append_highlight(query: dict):
+    query['highlight'] = {
+        "fields": {
+            "text": {}
+        },
+        "type": "unified"
+    }
+    return query
+
+
+def es_search(query: dict) -> Iterator[str]:
+    es = Elasticsearch(current_app.config.get('ELASTIC_SEARCH_URL'))
+    resp = es.search(index=current_app.config.get(
+        'ELASTIC_SEARCH_INDEX'), body=query)
+    return resp
+
+def highlight_text_search(text: str, filter_field: EsFields, filter_values: List[str]):
+    base_query = create_base_query_filter(text, filter_field, filter_values)
+    query = append_highlight(base_query)
+    for hit in es_search(query)['hits']['hits']:
+        yield {
+            "page_id": hit['_source']['page_id'],
+            "highlight": hit['highlight']['text']
+        }
+
+def text_search_aggregate_ids(text: str, filter_field: EsFields, filter_values: List[str]) -> List[str]:
+    base_query = create_base_query_filter(text, filter_field, filter_values)
+    query = append_aggregate(base_query, filter_field)
+    es_result = es_search(query)
+    es_buckets = es_result['aggregations']['ids']['buckets']
+    return [b.get('key') for b in es_buckets]
+

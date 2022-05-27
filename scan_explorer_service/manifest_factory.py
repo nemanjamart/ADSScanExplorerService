@@ -1,7 +1,8 @@
 from typing import Dict, Iterable
 from iiif_prezi.factory import ManifestFactory, Sequence, Canvas, Image, Annotation, Manifest, Range
 from scan_explorer_service.models import Article, Page, JournalVolume
-
+from typing import Union
+from itertools import chain
 
 class ManifestFactoryExtended(ManifestFactory):
     """ Extended manifest factory.
@@ -10,53 +11,32 @@ class ManifestFactoryExtended(ManifestFactory):
     functions used to create manifest objects from model.
     """
 
-    def create_manifest(self, article: Article):
+    def create_manifest(self, item: Union[Article, JournalVolume]):
         manifest = self.manifest(
-            ident=f'{article.id}/manifest.json', label="journal.volume")
+            ident=f'{item.id}/manifest.json', label="journal.volume")
         manifest.description = 'journal.description'
-        manifest.add_sequence(self.create_sequence(article))
-
-        return manifest
-
-    def create_manifest_from_volume(self, volume: JournalVolume):
-        manifest = self.manifest(
-            ident=f'{volume.id}/manifest.json', label="journal.volume")
-        manifest.description = 'journal.description'
-        manifest.add_sequence(self.create_sequence_from_volume(volume))
-        for range in self.create_ranges_from_volume(volume):
+        manifest.add_sequence(self.create_sequence(item))
+        for range in self.create_range(item):
             manifest.add_range(range)
-
+        
         return manifest
 
-    def create_sequence_from_volume(self, volume: JournalVolume) -> Sequence:
+    def create_sequence(self, item: Union[Article, JournalVolume]):
         sequence: Sequence = self.sequence()
-        for page in volume.pages:
-            sequence.add_canvas(self.get_or_create_canvas(page))
-        
-        return sequence
-
-    def create_ranges_from_volume(self, volume: JournalVolume) -> Iterable[Sequence]:
-        articles_done = []
-        for page in volume.pages:
-            for article in page.articles:
-                if article not in articles_done:
-                    articles_done.append(article)
-                    yield self.create_range(article)
-
-    def create_sequence(self, article: Article):
-        sequence: Sequence = self.sequence()
-        for page in article.pages:
+        for page in item.pages:
             sequence.add_canvas(self.get_or_create_canvas(page))
 
         return sequence
 
-    def create_range(self, article: Article):
-        range: Range = self.range(ident=article.bibcode, label=article.bibcode)
-        for page in article.pages:
+    def create_range(self, item: Union[Article, JournalVolume]):
+        if isinstance(item, JournalVolume):
+            return list(chain(*[self.create_range(article) for article in item.articles]))
+
+        range: Range = self.range(ident=item.bibcode, label=item.bibcode)
+        for page in item.pages:
             range.add_canvas(self.get_or_create_canvas(page))
 
-
-        return range
+        return [range]
 
     def get_canvas_dict(self) -> Dict[str, Canvas]:
         if not hasattr(self, 'canvas_dict'):

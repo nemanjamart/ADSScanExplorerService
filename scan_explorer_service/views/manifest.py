@@ -2,8 +2,9 @@ from flask import Blueprint, current_app, jsonify, url_for, request
 from scan_explorer_service.extensions import manifest_factory
 from scan_explorer_service.models import Article, Page, JournalVolume
 from flask_discoverer import advertise
-from scan_explorer_service.elasticsearch import volume_full_text_search, article_full_text_search
+from scan_explorer_service.elasticsearch import EsFields, highlight_text_search
 from urllib import parse as urlparse
+from typing import Union
 
 bp_manifest = Blueprint('manifest', __name__, url_prefix='/manifest')
 
@@ -13,69 +14,69 @@ def before_request():
     base_uri = urlparse.urljoin(request.url_root, bp_manifest.url_prefix)
     manifest_factory.set_base_prezi_uri(base_uri)
 
-@advertise(scopes=['get_manifest'], rate_limit = [300, 3600*24])
+
+@advertise(scopes=['get_manifest'], rate_limit=[300, 3600*24])
 @bp_manifest.route('/<string:id>/manifest.json', methods=['GET'])
 def get_manifest(id: str):
-    """ Creates an IIIF manifest from an article"""
+    """ Creates an IIIF manifest from an article or journalVolume"""
     with current_app.session_scope() as session:
-        article = session.query(Article).filter_by(id=id).one_or_none()
-        volume = session.query(JournalVolume).filter_by(id=id).one_or_none()
-        if article or volume:
-            if article:
-                manifest = manifest_factory.create_manifest(article)
-            else:
-                manifest = manifest_factory.create_manifest_from_volume(volume)
+        item: Union[Article, JournalVolume] = (
+            session.query(Article).filter(Article.id == id).one_or_none()
+            or session.query(JournalVolume).filter(JournalVolume.id == id).one_or_none())
 
-            # TODO: Check if OCR is available before adding search service..
-            search_url = urlparse.urljoin(request.url_root, url_for('manifest.search', id = id))
+        if item:
+            manifest = manifest_factory.create_manifest(item)
+            search_url = urlparse.urljoin(
+                request.url_root, url_for('manifest.search', id=id))
             manifest_factory.add_search_service(manifest, search_url)
 
             return manifest.toJSON(top=True)
         else:
             return jsonify(exception='Article not found'), 404
 
-@advertise(scopes=['get_canvas'], rate_limit = [300, 3600*24])
+
+@advertise(scopes=['get_canvas'], rate_limit=[300, 3600*24])
 @bp_manifest.route('/canvas/<string:page_id>.json', methods=['GET'])
 def get_canvas(page_id: str):
     """ Creates an IIIF canvas from a page"""
     with current_app.session_scope() as session:
         page = session.query(Page).filter(Page.id == page_id).first()
-
         if page:
-            page = manifest_factory.get_or_create_canvas(page)
-            return page.toJSON(top=True)
+            canvas = manifest_factory.get_or_create_canvas(page)
+            return canvas.toJSON(top=True)
         else:
             return jsonify(exception='Page not found'), 404
 
 
-@advertise(scopes=['search'], rate_limit = [300, 3600*24])
+@advertise(scopes=['search'], rate_limit=[300, 3600*24])
 @bp_manifest.route('/<string:id>/search', methods=['GET'])
 def search(id: str):
     """ Searches the content of an article """
+
+    query = request.args.get('q')
+    if not query or len(query) <= 0:
+        return jsonify(exception='No search query specified'), 400
+
     with current_app.session_scope() as session:
-        article = session.query(Article).filter_by(id=id).one_or_none()
-        volume = session.query(JournalVolume).filter_by(id=id).one_or_none()
-        if article or volume:
-            query = request.args.get('q')
-            if query and len(query) > 0:
-                
-                annotation_list = manifest_factory.annotationList(request.url)
-                annotation_list.resources = []
-                results = []
-                if article:
-                    results = article_full_text_search(id, query)
-                else:
-                    results = volume_full_text_search(id, query)
+        item: Union[Article, JournalVolume] = (
+                    session.query(Article).filter(Article.id == id).one_or_none()
+                    or session.query(JournalVolume).filter(JournalVolume.id == id).one_or_none())
+        if item:
+            annotation_list = manifest_factory.annotationList(request.url)
+            annotation_list.resources = []
+            
+            es_field = EsFields.article_id if isinstance(item, Article) else EsFields.volume_id
+            results = highlight_text_search(query, es_field, [item.id])
 
-                for res in results:
-                    annotation = annotation_list.annotation(res['page_id'])
-                    canvas_slice_url = ''.join([url_for('manifest.get_canvas', page_id=res['page_id'])])
-                    annotation.on = urlparse.urljoin(request.url_root, canvas_slice_url)
-                    highlight_text = "<br><br>".join(res['highlight']).replace("em>", "b>")
-                    annotation.text(highlight_text, format="text/html")
+            for res in results:
+                annotation = annotation_list.annotation(res['page_id'])
+                canvas_slice_url = ''.join([url_for('manifest.get_canvas', page_id=res['page_id'])])
+                annotation.on = urlparse.urljoin(request.url_root, canvas_slice_url)
+                highlight_text = "<br><br>".join(res['highlight']).replace("em>", "b>")
+                annotation.text(highlight_text, format="text/html")
 
-                return annotation_list.toJSON(top=True)
-            else:
-                return jsonify(exception='No search query specified'), 400
+            return annotation_list.toJSON(top=True)
+
+
         else:
             return jsonify(exception='Article or volume not found'), 404
