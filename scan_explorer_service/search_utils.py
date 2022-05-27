@@ -1,9 +1,7 @@
 import os
-import math
 import requests
 from scan_explorer_service.models import Article, JournalVolume, Page, PageType
 from flask_sqlalchemy import Pagination
-from sqlalchemy import func
 from flask import current_app
 
 
@@ -41,19 +39,6 @@ def serialize_result(db_session, result: Pagination):
     return {'page': result.page, 'pageCount': result.pages, 'limit': result.per_page, 'total': result.total, 'items': [
         item.serialized | fetch_ads_metadata(db_session, item.id) for item in result.items]}
 
-def serialize_es_article_result(db_session, resp: dict, page: int, limit: int):
-    res_list = resp['aggregations']['ids']['buckets']
-    total_count = resp['aggregations']['total_count']['value']
-
-    return {'page': page, 'pageCount': math.ceil(total_count / limit), 'limit': limit, 'total': total_count, 'items': [
-         db_session.query(Article).filter(Article.id == item['key']).one().serialized | fetch_ads_metadata(db_session, item['key']) for item in res_list]}
-
-def serialize_es_volume_result(db_session, resp: dict, page: int, limit: int):
-    res_list = resp['aggregations']['ids']['buckets']
-    total_count = resp['aggregations']['total_count']['value']
-
-    return {'page': page, 'pageCount':  math.ceil(total_count / limit), 'limit': limit, 'total': total_count, 'items': [
-        db_session.query(JournalVolume).filter(JournalVolume.id == item['key']).one().serialized | fetch_ads_metadata(db_session, item['key']) for item in res_list]}
 
 
 def fetch_ads_metadata(session, uuid: str):

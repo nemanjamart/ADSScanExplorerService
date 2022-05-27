@@ -162,7 +162,7 @@ class Page(Base, Timestamp):
 
     @property
     def thumbnail_url(self):
-        return f'{self.image_url}/square/480,480/0/default.png'
+        return f'{self.image_url}/square/480,480/0/default.jpg'
 
     @property
     def serialized(self):
