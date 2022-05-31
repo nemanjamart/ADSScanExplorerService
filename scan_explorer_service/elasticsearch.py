@@ -40,7 +40,7 @@ def create_base_query_filter(text: str, filter_field: EsFields, filter_values: L
                 },
                 "filter": {
                     "terms": {
-                        filter_field: filter_values
+                        filter_field.value: filter_values
                     }
                 }
             }
@@ -48,15 +48,15 @@ def create_base_query_filter(text: str, filter_field: EsFields, filter_values: L
     }
 
 
-def append_aggregate(query: dict, agg_field):
-    query['aggs'] = {
+def append_aggregate(query: dict, agg_field: EsFields):
+    query['aggs'] = {   
         "total_count": {
             "cardinality": {
-                "field": agg_field
+                "field": agg_field.value
             }
         },
         "ids": {
-            "terms": {"field": agg_field},
+            "terms": {"field": agg_field.value},
             "aggs": {
                 "bucket_sort": {
                     "bucket_sort": {
@@ -69,7 +69,7 @@ def append_aggregate(query: dict, agg_field):
                 }
             }
         }
-    },
+    }
 
     return query
 
@@ -90,7 +90,7 @@ def es_search(query: dict) -> Iterator[str]:
         'ELASTIC_SEARCH_INDEX'), body=query)
     return resp
 
-def highlight_text_search(text: str, filter_field: EsFields, filter_values: List[str]):
+def text_search_highlight(text: str, filter_field: EsFields, filter_values: List[str]):
     base_query = create_base_query_filter(text, filter_field, filter_values)
     query = append_highlight(base_query)
     for hit in es_search(query)['hits']['hits']:

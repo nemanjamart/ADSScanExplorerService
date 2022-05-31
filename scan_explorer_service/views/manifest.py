@@ -2,7 +2,7 @@ from flask import Blueprint, current_app, jsonify, url_for, request
 from scan_explorer_service.extensions import manifest_factory
 from scan_explorer_service.models import Article, Page, JournalVolume
 from flask_discoverer import advertise
-from scan_explorer_service.elasticsearch import EsFields, highlight_text_search
+from scan_explorer_service.elasticsearch import EsFields, text_search_highlight
 from urllib import parse as urlparse
 from typing import Union
 
@@ -66,7 +66,7 @@ def search(id: str):
             annotation_list.resources = []
             
             es_field = EsFields.article_id if isinstance(item, Article) else EsFields.volume_id
-            results = highlight_text_search(query, es_field, [item.id])
+            results = text_search_highlight(query, es_field, [item.id])
 
             for res in results:
                 annotation = annotation_list.annotation(res['page_id'])
