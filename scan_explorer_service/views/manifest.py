@@ -11,7 +11,7 @@ bp_manifest = Blueprint('manifest', __name__, url_prefix='/manifest')
 
 @bp_manifest.before_request
 def before_request():
-    base_uri = urlparse.urljoin(request.url_root, bp_manifest.url_prefix)
+    base_uri = urlparse.urljoin(request.host_url, bp_manifest.url_prefix)
     manifest_factory.set_base_prezi_uri(base_uri)
 
 
@@ -27,7 +27,7 @@ def get_manifest(id: str):
         if item:
             manifest = manifest_factory.create_manifest(item)
             search_url = urlparse.urljoin(
-                request.url_root, url_for('manifest.search', id=id))
+                request.host_url, url_for('manifest.search', id=id))
             manifest_factory.add_search_service(manifest, search_url)
 
             return manifest.toJSON(top=True)
