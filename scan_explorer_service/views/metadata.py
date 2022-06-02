@@ -68,7 +68,7 @@ def article_search():
 
         result: Pagination = query.group_by(Article.id).paginate(page, limit, False)
 
-        return jsonify(serialize_result(session, result))
+        return jsonify(serialize_result(session, result, qs_dict.get('full', '')))
 
 
 
@@ -98,7 +98,7 @@ def collection_search():
 
         result: Pagination = query.group_by(JournalVolume.id).paginate(page, limit, False)
 
-        return jsonify(serialize_result(session, result))
+        return jsonify(serialize_result(session, result, qs_dict.get('full', '')))
 
 
 @advertise(scopes=['page_search'], rate_limit=[300, 3600*24])
@@ -131,4 +131,4 @@ def page_search():
                 
         result: Pagination = query.group_by(Page.id).paginate(page, limit, False)
 
-        return jsonify(serialize_result(session, result))
+        return jsonify(serialize_result(session, result, qs_dict.get('full', '')))
