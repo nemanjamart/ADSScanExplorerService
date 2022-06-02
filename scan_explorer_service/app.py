@@ -30,6 +30,8 @@ def register_views(app: ADSFlask):
     @app.after_request
     def after_request(response):
         response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', '*')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,PATCH,OPTIONS')
         return response
 
 
