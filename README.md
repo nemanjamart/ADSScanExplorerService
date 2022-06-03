@@ -4,9 +4,9 @@
 
 ### ADSScanExplorerService
 
-Start the service by running the docker compose. Make sure to set the correct urls to the db and ElasticSearch instance in config.py
+Start the service by running the docker compose. Make sure to set the correct urls to the db and OpenSearch instance in config.py
 ```
-docker compose -f docker-compose.yaml up -d
+docker compose -f docker/service/docker-compose.yaml up -d
 ```
 
 ### Cantaloupe
@@ -14,7 +14,7 @@ docker compose -f docker-compose.yaml up -d
 The image server retrieving the images from the S3 Bucket. S3 Bucket keys needs to be edited in the docker compose file docker-compose_cantaloupe.yaml. Then run the docker compose 
 
 ```
-docker compose -f docker-compose_cantaloupe.yaml up -d
+docker compose -f docker/cantaloupe/docker-compose.yaml up -d
 ```
 
 Images should be accessible (if they have been uploaded).

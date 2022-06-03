@@ -1,5 +1,5 @@
 from typing import Iterator, List
-from elasticsearch import Elasticsearch
+from opensearchpy import OpenSearch
 from flask import current_app
 from enum import Enum
 from typing import Union
@@ -85,9 +85,9 @@ def append_highlight(query: dict):
 
 
 def es_search(query: dict) -> Iterator[str]:
-    es = Elasticsearch(current_app.config.get('ELASTIC_SEARCH_URL'))
+    es = OpenSearch(current_app.config.get('OPEN_SEARCH_URL'))
     resp = es.search(index=current_app.config.get(
-        'ELASTIC_SEARCH_INDEX'), body=query)
+        'OPEN_SEARCH_INDEX'), body=query)
     return resp
 
 def text_search_highlight(text: str, filter_field: EsFields, filter_values: List[str]):

@@ -4,7 +4,7 @@ from scan_explorer_service.models import Article, JournalVolume, Page
 from flask_discoverer import advertise
 from scan_explorer_service.search_utils import *
 from flask_sqlalchemy import Pagination
-from scan_explorer_service.elasticsearch import EsFields, text_search_aggregate_ids
+from scan_explorer_service.open_search import EsFields, text_search_aggregate_ids
 from sqlalchemy.orm import load_only
 
 

@@ -8,5 +8,5 @@ MarkupSafe==2.0.1
 itsdangerous==2.0.1
 Werkzeug==2.0.3
 psycopg2-binary==2.9.3
-elasticsearch==8.2.0
+opensearch-py==2.0.0
 setuptools<58

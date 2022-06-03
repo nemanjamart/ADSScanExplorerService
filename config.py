@@ -9,7 +9,7 @@ IMAGE_API_BASE_URL = f'{IMAGE_API_SERVER}{IMAGE_API_BASE_PATH}'
 SQLALCHEMY_DATABASE_URI = 'postgres://scan_explorer:scan_explorer@postgres:5432/scan_explorer_pipeline'
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-ELASTIC_SEARCH_URL = 'http://es:9200'
-ELASTIC_SEARCH_INDEX = 'scan-explorer'
+OPEN_SEARCH_URL = 'http://opensearch-node1:9200'
+OPEN_SEARCH_INDEX = 'scan-explorer'
 
 ADS_API_URL = 'https://api.adsabs.harvard.edu/v1/search/query'

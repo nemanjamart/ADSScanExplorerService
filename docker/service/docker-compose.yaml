@@ -5,11 +5,13 @@ networks:
       external: true
 services:
   ads_scan_explorer_service:
-    build: .
+    build:
+      context: ../../
+      dockerfile: ./docker/service/Dockerfile
     image: ads_scan_explorer_service:latest
     container_name: ads_scan_explorer_service
     volumes:
-    - ./:/app
+    - ../../:/app
     ports:
       - "8181:8181"
     entrypoint: python wsgi.py

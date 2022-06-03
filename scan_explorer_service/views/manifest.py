@@ -2,7 +2,7 @@ from flask import Blueprint, current_app, jsonify, url_for, request
 from scan_explorer_service.extensions import manifest_factory
 from scan_explorer_service.models import Article, Page, JournalVolume
 from flask_discoverer import advertise
-from scan_explorer_service.elasticsearch import EsFields, text_search_highlight
+from scan_explorer_service.open_search import EsFields, text_search_highlight
 from urllib import parse as urlparse
 from typing import Union
 
