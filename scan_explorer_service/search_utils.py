@@ -15,7 +15,6 @@ journal_volume_query_translations = dict({
 
 article_query_translations = dict({
     'bibcode': (lambda val: Article.bibcode.ilike(f'{val}%')),
-    'bibstem': (lambda val: Article.bibcode.ilike(f'%{val}%'))
 })
 
 page_query_translations = dict({
