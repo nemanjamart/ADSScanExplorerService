@@ -1,6 +1,6 @@
 from typing import Dict, Iterable
 from iiif_prezi.factory import ManifestFactory, Sequence, Canvas, Image, Annotation, Manifest, Range
-from scan_explorer_service.models import Article, Page, JournalVolume
+from scan_explorer_service.models import Article, Page, Collection
 from typing import Union
 from itertools import chain
 
@@ -11,7 +11,7 @@ class ManifestFactoryExtended(ManifestFactory):
     functions used to create manifest objects from model.
     """
 
-    def create_manifest(self, item: Union[Article, JournalVolume]):
+    def create_manifest(self, item: Union[Article, Collection]):
         manifest = self.manifest(
             ident=f'{item.id}/manifest.json', label="journal.volume")
         manifest.description = 'journal.description'
@@ -21,15 +21,15 @@ class ManifestFactoryExtended(ManifestFactory):
         
         return manifest
 
-    def create_sequence(self, item: Union[Article, JournalVolume]):
+    def create_sequence(self, item: Union[Article, Collection]):
         sequence: Sequence = self.sequence()
         for page in item.pages:
             sequence.add_canvas(self.get_or_create_canvas(page))
 
         return sequence
 
-    def create_range(self, item: Union[Article, JournalVolume]):
-        if isinstance(item, JournalVolume):
+    def create_range(self, item: Union[Article, Collection]):
+        if isinstance(item, Collection):
             return list(chain(*[self.create_range(article) for article in item.articles]))
 
         range: Range = self.range(ident=item.bibcode, label=item.bibcode)

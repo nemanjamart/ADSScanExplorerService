@@ -1,6 +1,6 @@
 from urllib.parse import parse_qs
 from flask import Blueprint, current_app, jsonify, request
-from scan_explorer_service.models import Article, JournalVolume, Page
+from scan_explorer_service.models import Article, Collection, Page
 from flask_discoverer import advertise
 from scan_explorer_service.search_utils import *
 from flask_sqlalchemy import Pagination
@@ -42,6 +42,59 @@ def get_article():
         else:
             return jsonify(message='No bibcode provided'), 400
 
+    
+@advertise(scopes=['post_article'], rate_limit=[300, 3600*24])
+@bp_metadata.route('/article', methods=['POST'])
+def post_article():
+    json = request.get_json()
+    if json:
+        try:
+            article = Article(**json)
+            with current_app.session_scope() as session:
+                session.add(article)
+                session.commit()
+                session.refresh(article)
+                return jsonify({'id': article.id}), 200
+        except:
+            return jsonify(message='Failed to create article'), 500
+    else:
+        return jsonify(message='Invalid article json'), 400
+
+@advertise(scopes=['post_collection'], rate_limit=[300, 3600*24])
+@bp_metadata.route('/collection', methods=['POST'])
+def post_collection():
+    json = request.get_json()
+    if json:
+        try:
+            collection = Collection(**json)
+            with current_app.session_scope() as session:
+                session.add(collection)
+                session.commit()
+                session.refresh(collection)
+                return jsonify({'id': collection.id}), 200
+        except:
+            return jsonify(message='Failed to create collection'), 500
+    else:
+        return jsonify(message='Invalid collection json'), 400
+
+
+@advertise(scopes=['post_page'], rate_limit=[300, 3600*24])
+@bp_metadata.route('/page', methods=['POST'])
+def post_page():
+    json = request.get_json()
+    if json:
+        try:
+            page = Page(**json)
+            with current_app.session_scope() as session:
+                session.add(page)
+                session.commit()
+                session.refresh(page)
+                return jsonify({'id': page.id}), 200
+        except:
+            return jsonify(message='Failed to create page'), 500
+    else:
+        return jsonify(message='Invalid page json'), 400
+
 
 @advertise(scopes=['article_search'], rate_limit=[300, 3600*24])
 @bp_metadata.route('/article/search', methods=['GET'])
@@ -49,7 +102,7 @@ def article_search():
     qs_dict, page, limit = parse_query_args(request.args)
 
     query_trans = {key: filter_func for key, filter_func in article_query_translations.items() if key in qs_dict.keys()}
-    jv_query_trans = {key: filter_func for key, filter_func in journal_volume_query_translations.items() if key in qs_dict.keys()}
+    jv_query_trans = {key: filter_func for key, filter_func in collection_query_translations.items() if key in qs_dict.keys()}
 
     with current_app.session_scope() as session:
         query = session.query(Article)
@@ -57,7 +110,7 @@ def article_search():
             query = query.filter(filter_func(qs_dict.get(key)))
 
         if len(jv_query_trans) > 0:
-            query = query.join(JournalVolume)
+            query = query.join(Collection)
             for key, filter_func in jv_query_trans.items():
                 query = query.filter(filter_func(qs_dict.get(key)))
 
@@ -71,17 +124,16 @@ def article_search():
         return jsonify(serialize_result(session, result, qs_dict.get('full', '')))
 
 
-
 @advertise(scopes=['collection_search'], rate_limit=[300, 3600*24])
 @bp_metadata.route('/collection/search', methods=['GET'])
 def collection_search():
     qs_dict, page, limit = parse_query_args(request.args)
 
-    query_trans = {key: filter_func for key, filter_func in journal_volume_query_translations.items() if key in qs_dict.keys()}
+    query_trans = {key: filter_func for key, filter_func in collection_query_translations.items() if key in qs_dict.keys()}
     a_query_trans = {key: filter_func for key, filter_func in article_query_translations.items() if key in qs_dict.keys()}
 
     with current_app.session_scope() as session:
-        query = session.query(JournalVolume)
+        query = session.query(Collection)
         for key, filter_func in query_trans.items():
             query = query.filter(filter_func(qs_dict.get(key)))
         
@@ -94,9 +146,9 @@ def collection_search():
         if 'full' in qs_dict.keys():
             item_ids = [str(a.id) for a in query.options(load_only('id')).all()]
             es_ids = text_search_aggregate_ids(qs_dict.get('full'), EsFields.volume_id, item_ids)
-            query = query.filter(JournalVolume.id.in_(es_ids))
+            query = query.filter(Collection.id.in_(es_ids))
 
-        result: Pagination = query.group_by(JournalVolume.id).paginate(page, limit, False)
+        result: Pagination = query.group_by(Collection.id).paginate(page, limit, False)
 
         return jsonify(serialize_result(session, result, qs_dict.get('full', '')))
 
@@ -107,7 +159,7 @@ def page_search():
     qs_dict, page, limit = parse_query_args(request.args)
     query_trans = {key: filter_func for key, filter_func in page_query_translations.items() if key in qs_dict.keys()}
     a_query_trans = {key: filter_func for key, filter_func in article_query_translations.items() if key in qs_dict.keys()}
-    jw_query_trans = {key: filter_func for key, filter_func in journal_volume_query_translations.items() if key in qs_dict.keys()}
+    jw_query_trans = {key: filter_func for key, filter_func in collection_query_translations.items() if key in qs_dict.keys()}
 
     with current_app.session_scope() as session:
         query = session.query(Page)
@@ -120,7 +172,7 @@ def page_search():
                 query = query.filter(filter_func(qs_dict.get(key)))
 
         if len(jw_query_trans) > 0:
-            query = query.join(JournalVolume)
+            query = query.join(Collection)
             for key, filter_func in jw_query_trans.items():
                 query = query.filter(filter_func(qs_dict.get(key)))
 
@@ -132,3 +184,5 @@ def page_search():
         result: Pagination = query.group_by(Page.id).paginate(page, limit, False)
 
         return jsonify(serialize_result(session, result, qs_dict.get('full', '')))
+
+

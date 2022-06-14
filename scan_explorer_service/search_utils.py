@@ -1,16 +1,16 @@
 import os
 import requests
-from scan_explorer_service.models import Article, JournalVolume, Page, PageType
+from scan_explorer_service.models import Article, Collection, Page, PageType
 from flask_sqlalchemy import Pagination
 from flask import current_app
 import shlex
 
 
 
-journal_volume_query_translations = dict({
-    'bibstem': lambda val: JournalVolume.journal.ilike(f'{val}%'),
-    'journal': lambda val: JournalVolume.journal.ilike(f'{val}%'),
-    'volume': lambda val: JournalVolume.volume.ilike(f'%{val}%'),
+collection_query_translations = dict({
+    'bibstem': lambda val: Collection.journal.ilike(f'{val}%'),
+    'journal': lambda val: Collection.journal.ilike(f'{val}%'),
+    'volume': lambda val: Collection.volume.ilike(f'%{val}%'),
 })
 
 article_query_translations = dict({

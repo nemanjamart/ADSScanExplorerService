@@ -1,6 +1,6 @@
 from flask import url_for, jsonify
 import unittest
-from scan_explorer_service.models import JournalVolume, Page, Article
+from scan_explorer_service.models import Collection, Page, Article
 from scan_explorer_service.tests.base import TestCaseDatabase
 from scan_explorer_service.models import Base
 import json
@@ -22,18 +22,18 @@ class TestManifest(TestCaseDatabase):
     def setUp(self):
         Base.metadata.create_all(bind=self.app.db.engine)
 
-        self.journalVolume = JournalVolume('type', 'journal', 'volume')
-        self.app.db.session.add(self.journalVolume)
+        self.collection = Collection('type', 'journal', 'volume')
+        self.app.db.session.add(self.collection)
         self.app.db.session.commit()
-        self.app.db.session.refresh(self.journalVolume)
+        self.app.db.session.refresh(self.collection)
 
         self.article = Article(bibcode='1988ApJ...333..341R',
-                               journal_volume_id=self.journalVolume.id)
+                               collection_id=self.collection.id)
         self.app.db.session.add(self.article)
         self.app.db.session.commit()
         self.app.db.session.refresh(self.article)
 
-        self.page = Page('page', self.journalVolume.id)
+        self.page = Page('page', self.collection.id)
         self.page.width = 1000
         self.page.height = 1000
         self.page.label = 'label'

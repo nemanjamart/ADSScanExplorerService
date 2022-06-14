@@ -1,6 +1,6 @@
 from flask import Blueprint, current_app, jsonify, url_for, request
 from scan_explorer_service.extensions import manifest_factory
-from scan_explorer_service.models import Article, Page, JournalVolume
+from scan_explorer_service.models import Article, Page, Collection
 from flask_discoverer import advertise
 from scan_explorer_service.open_search import EsFields, text_search_highlight
 from urllib import parse as urlparse
@@ -18,11 +18,11 @@ def before_request():
 @advertise(scopes=['get_manifest'], rate_limit=[300, 3600*24])
 @bp_manifest.route('/<string:id>/manifest.json', methods=['GET'])
 def get_manifest(id: str):
-    """ Creates an IIIF manifest from an article or journalVolume"""
+    """ Creates an IIIF manifest from an article or Collection"""
     with current_app.session_scope() as session:
-        item: Union[Article, JournalVolume] = (
+        item: Union[Article, Collection] = (
             session.query(Article).filter(Article.id == id).one_or_none()
-            or session.query(JournalVolume).filter(JournalVolume.id == id).one_or_none())
+            or session.query(Collection).filter(Collection.id == id).one_or_none())
 
         if item:
             manifest = manifest_factory.create_manifest(item)
@@ -58,9 +58,9 @@ def search(id: str):
         return jsonify(exception='No search query specified'), 400
 
     with current_app.session_scope() as session:
-        item: Union[Article, JournalVolume] = (
+        item: Union[Article, Collection] = (
                     session.query(Article).filter(Article.id == id).one_or_none()
-                    or session.query(JournalVolume).filter(JournalVolume.id == id).one_or_none())
+                    or session.query(Collection).filter(Collection.id == id).one_or_none())
         if item:
             annotation_list = manifest_factory.annotationList(request.url)
             annotation_list.resources = []

@@ -46,28 +46,25 @@ class PageType(enum.Enum):
 
         return PageType.Normal
 
-class JournalVolume(Base, Timestamp):
+class Collection(Base, Timestamp):
     
     def __init__(self, type, journal, volume):
         self.type = type
         self.journal = journal
         self.volume = volume
 
-    __tablename__ = 'journal_volume'
+    __tablename__ = 'collection'
     __table_args__ = (Index('volume_index', "journal", "volume"), )
 
     id = Column(UUIDType, default=uuid.uuid4, primary_key=True)
     journal = Column(String)
     volume = Column(String)
     type = Column(String)
-    status = Column(Enum(VolumeStatus))
-    status_message = Column(String)
-    file_hash = Column(String)
 
     articles = relationship(
-        'Article', primaryjoin='JournalVolume.id==Article.journal_volume_id', back_populates='journal_volume')
+        'Article', primaryjoin='Collection.id==Article.collection_id', back_populates='collection')
     pages = relationship(
-        'Page', primaryjoin='JournalVolume.id==Page.journal_volume_id', back_populates='journal_volume',  lazy='dynamic', order_by="Page.volume_running_page_num")
+        'Page', primaryjoin='Collection.id==Page.collection_id', back_populates='collection',  lazy='dynamic', order_by="Page.collection_running_page_num")
 
     UniqueConstraint(journal, volume)
 
@@ -93,18 +90,18 @@ page_article_association_table = Table('page2article', Base.metadata,
 
 class Article(Base, Timestamp):
     __tablename__ = 'article'
-    __table_args__ = (Index('article_volume_index', "journal_volume_id"), Index('article_bibcode_index', "bibcode"))
+    __table_args__ = (Index('article_volume_index', "collection_id"), Index('article_bibcode_index', "bibcode"))
 
 
-    def __init__(self, bibcode, journal_volume_id):
+    def __init__(self, bibcode, collection_id):
         self.bibcode = bibcode
-        self.journal_volume_id = journal_volume_id
+        self.collection_id = collection_id
 
     id = Column(UUIDType, default=uuid.uuid4, primary_key=True)
     bibcode = Column(String)
-    journal_volume_id = Column(UUIDType, ForeignKey(JournalVolume.id))
+    collection_id = Column(UUIDType, ForeignKey(Collection.id))
 
-    journal_volume = relationship('JournalVolume', back_populates='articles')
+    collection = relationship('Collection', back_populates='articles')
     pages = relationship('Page', secondary=page_article_association_table,
                          back_populates='articles', lazy='dynamic', order_by="Page.volume_running_page_num")
 
@@ -117,18 +114,24 @@ class Article(Base, Timestamp):
             'bibcode': self.bibcode,
             'pages': self.pages.count(),
             'thumbnail': self.pages.first().thumbnail_url,
-            'journal_volume_id': self.journal_volume_id
+            'collection_id': self.collection_id
         }
 
 
 class Page(Base, Timestamp):
     __tablename__ = 'page'
-    __table_args__ = (Index('page_volume_index', "journal_volume_id"), Index('page_name_index', "name"))
+    __table_args__ = (Index('page_volume_index', "collection_id"), Index('page_name_index', "name"))
 
-    def __init__(self, name, journal_volume_id):
+    def __init__(self, name, label, format, color_type, page_type, width, height, collection_id, volume_running_page_num):
         self.name = name
-        self.journal_volume_id = journal_volume_id
-        self.color_type = PageColor.BW
+        self.label = label
+        self.format = format,
+        self.color_type = color_type
+        self.page_type = page_type
+        self.width = width
+        self.height = height
+        self.collection_id = collection_id
+        self.volume_running_page_num = volume_running_page_num
 
     id = Column(UUIDType, default=uuid.uuid4,  primary_key=True)
     name = Column(String)
@@ -138,13 +141,13 @@ class Page(Base, Timestamp):
     page_type = Column(Enum(PageType))
     width = Column(Integer)
     height = Column(Integer)
-    journal_volume_id = Column(UUIDType, ForeignKey(JournalVolume.id))
+    collection_id = Column(UUIDType, ForeignKey(Collection.id))
     volume_running_page_num = Column(Integer)
     articles = relationship('Article', secondary=page_article_association_table, back_populates='pages')
-    journal_volume = relationship('JournalVolume', back_populates='pages')
+    collection = relationship('Collection', back_populates='pages')
 
-    UniqueConstraint(journal_volume_id, volume_running_page_num)
-    UniqueConstraint(journal_volume_id, name)
+    UniqueConstraint(collection_id, volume_running_page_num)
+    UniqueConstraint(collection_id, name)
 
     @property
     def image_url(self):
@@ -153,7 +156,7 @@ class Page(Base, Timestamp):
     
     @property
     def image_path(self):
-        image_path = f'bitmaps%2F{self.journal_volume.type}%2F{self.journal_volume.journal}%2F{self.journal_volume.volume}%2F600'
+        image_path = f'bitmaps%2F{self.collection.type}%2F{self.collection.journal}%2F{self.collection.volume}%2F600'
         image_path = image_path.replace('.', '_')
         image_path += f'%2F{self.name}'
         if self.color_type != PageColor.BW:
@@ -170,7 +173,7 @@ class Page(Base, Timestamp):
         return {
             'id': self.id,
             'label': self.label,
-            'journal_volume_id': self.journal_volume_id,
+            'collection_id': self.collection_id,
             'volume_page_num': self.volume_running_page_num,
             'articles': [a.id for a in self.articles],
             'thumbnail': self.thumbnail_url
