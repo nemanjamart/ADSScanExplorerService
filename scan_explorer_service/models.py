@@ -9,17 +9,6 @@ import enum
 
 Base = declarative_base()
 
-
-class VolumeStatus(enum.Enum):
-    """Volume ingestion status"""
-    New = 1
-    Processing = 2
-    Update = 3
-    Db_done = 4
-    Bucket_done = 5
-    Done = 6
-    Error = 7
-
 class PageColor(enum.Enum):
     """Page Color Type"""
     BW = 1
@@ -48,10 +37,14 @@ class PageType(enum.Enum):
 
 class Collection(Base, Timestamp):
     
-    def __init__(self, type, journal, volume):
+    def __init__(self, type, journal, volume, articles = []):
         self.type = type
         self.journal = journal
         self.volume = volume
+
+        for article in articles:
+            article['collection_id'] = self.id
+            self.articles.append(Article(**article))
 
     __tablename__ = 'collection'
     __table_args__ = (Index('volume_index', "journal", "volume"), )
@@ -64,7 +57,7 @@ class Collection(Base, Timestamp):
     articles = relationship(
         'Article', primaryjoin='Collection.id==Article.collection_id', back_populates='collection')
     pages = relationship(
-        'Page', primaryjoin='Collection.id==Page.collection_id', back_populates='collection',  lazy='dynamic', order_by="Page.collection_running_page_num")
+        'Page', primaryjoin='Collection.id==Page.collection_id', back_populates='collection',  lazy='dynamic', order_by="Page.volume_running_page_num")
 
     UniqueConstraint(journal, volume)
 
@@ -93,9 +86,12 @@ class Article(Base, Timestamp):
     __table_args__ = (Index('article_volume_index', "collection_id"), Index('article_bibcode_index', "bibcode"))
 
 
-    def __init__(self, bibcode, collection_id):
+    def __init__(self, bibcode, collection_id, pages=[]):
         self.bibcode = bibcode
         self.collection_id = collection_id
+        for page in pages:
+            page['collection_id'] = collection_id
+            self.pages.append(Page(**page))
 
     id = Column(UUIDType, default=uuid.uuid4, primary_key=True)
     bibcode = Column(String)
