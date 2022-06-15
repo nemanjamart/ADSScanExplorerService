@@ -37,7 +37,7 @@ class PageType(enum.Enum):
 
 class Collection(Base, Timestamp):
     
-    def __init__(self, type, journal, volume, articles = []):
+    def __init__(self, type, journal, volume, articles = [], pages = []):
         self.type = type
         self.journal = journal
         self.volume = volume
@@ -45,6 +45,9 @@ class Collection(Base, Timestamp):
         for article in articles:
             article['collection_id'] = self.id
             self.articles.append(Article(**article))
+        for page in pages:
+            page['collection_id'] = self.id
+            self.pages.append(Page(**page))
 
     __tablename__ = 'collection'
     __table_args__ = (Index('volume_index', "journal", "volume"), )
