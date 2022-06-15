@@ -92,12 +92,18 @@ class Article(Base, Timestamp):
     def __init__(self, bibcode, collection_id, pages=[]):
         self.bibcode = bibcode
         self.collection_id = collection_id
+        min_page_num = float('inf')
         for page in pages:
             page['collection_id'] = collection_id
             self.pages.append(Page(**page))
+            if page.volume_running_page_num < min_page_num:
+                min_page_num = page.volume_running_page_num
+            if min_page_num < float('inf'):
+                self.start_page_number = min_page_num
 
     id = Column(UUIDType, default=uuid.uuid4, primary_key=True)
     bibcode = Column(String)
+    start_page_number = Column(Integer)
     collection_id = Column(UUIDType, ForeignKey(Collection.id))
 
     collection = relationship('Collection', back_populates='articles')
