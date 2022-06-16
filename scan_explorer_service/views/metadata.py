@@ -1,5 +1,5 @@
 from flask import Blueprint, current_app, jsonify, request
-from scan_explorer_service.db_utils import article_exists, article_get, collection_get, page_get
+from scan_explorer_service.db_utils import article_get_or_create, article_overwrite, collection_overwrite, page_get_or_create, page_overwrite
 from scan_explorer_service.models import Article, Collection, Page
 from flask_discoverer import advertise
 from scan_explorer_service.search_utils import *
@@ -19,15 +19,7 @@ def put_article():
         with current_app.session_scope() as session:
             try:
                 article = Article(**json)
-
-                persisted = article_get(session, article.bibcode)
-                if persisted:
-                    session.delete(persisted)
-                    session.flush()
-
-                session.add(article)
-                session.commit()
-                session.refresh(article)
+                article_overwrite(session, article)
                 return jsonify({'id': article.id}), 200
             except:
                 session.rollback()
@@ -44,27 +36,17 @@ def put_collection():
         with current_app.session_scope() as session:
             try:
                 collection = Collection(**json)
+                collection_overwrite(session, collection)
+                
+                for page_json in json.get('pages', []):
+                    page_json['collection_id'] = collection.id
+                    page = page_get_or_create(session, **page_json)
 
-                persisted = collection_get(
-                    session, collection.journal, collection.volume)
-                if persisted:
-                    session.delete(persisted)
-                    session.flush()
+                    for article_json in page_json.get('articles', []):
+                        article_json['collection_id'] = collection.id
+                        page.articles.append(article_get_or_create(session, **article_json))
 
-                session.add(collection)
-                session.flush()
-                session.refresh(collection)
-
-                for page in json.get('pages', []):
-                    page['collection_id'] = collection.id
-                    p = Page(**page)
-
-                    for article in page.get('articles', []):
-                        article['collection_id'] = collection.id
-                        a = Article(**article)
-                        p.articles.append(a)
-
-                    session.add(p)
+                    session.add(page)
                 session.commit()
 
                 return jsonify({'id': collection.id}), 200
@@ -83,22 +65,11 @@ def put_page():
         with current_app.session_scope() as session:
             try:
                 page = Page(**json)
-
-                persisted = page_get(
-                    session, page.collection_id, page.name, page.volume_running_page_num)
-                if persisted:
-                    session.delete(persisted)
-                    session.flush()
+                page_overwrite(session, page)
 
                 for article_json in json.get('articles', []):
                     article_json['collection_id'] = page.collection_id
-                    article = Article(**article_json)
-
-                    if article_exists(session, article.bibcode):
-                        page.articles.append(
-                            article_get(session, article.bibcode))
-                    else:
-                        page.articles.append(article)
+                    page.articles.append(article_get_or_create(session, **article_json))
 
                 session.add(page)
                 session.commit()
