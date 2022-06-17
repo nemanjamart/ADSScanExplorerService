@@ -3,7 +3,6 @@ from flask import current_app
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, UniqueConstraint, Enum, Index, or_
 from sqlalchemy.orm import relationship
-from sqlalchemy_utils.types import UUIDType
 from sqlalchemy_utils.models import Timestamp
 import enum
 
@@ -45,11 +44,12 @@ class Collection(Base, Timestamp):
         self.type = kwargs.get('type')
         self.journal = kwargs.get('journal')
         self.volume = kwargs.get('volume')
+        self.id = self.journal + self.volume
 
     __tablename__ = 'collection'
     __table_args__ = (Index('volume_index', "journal", "volume"), )
 
-    id = Column(UUIDType, default=uuid.uuid4, primary_key=True)
+    id = Column(String, primary_key=True)
     journal = Column(String, nullable=False)
     volume = Column(String, nullable=False)
     type = Column(String)
@@ -77,7 +77,7 @@ page_article_association_table = Table('page2article', Base.metadata,
                                        Column('page_id', ForeignKey(
                                            'page.id'), primary_key=True),
                                        Column('article_id', ForeignKey(
-                                           'article.id'), primary_key=True)
+                                           'article.bibcode'), primary_key=True)
                                        )
 
 
@@ -87,18 +87,17 @@ class Article(Base, Timestamp):
         'article_bibcode_index', "bibcode"))
 
     def __init__(self, bibcode, collection_id):
+        self.id = bibcode
         self.bibcode = bibcode
         self.collection_id = collection_id
 
-    id = Column(UUIDType, default=uuid.uuid4, primary_key=True)
-    bibcode = Column(String)
-    collection_id = Column(UUIDType, ForeignKey(Collection.id))
+    id = Column(String, primary_key=True)
+    bibcode = Column(String, primary_key=True)
+    collection_id = Column(String, ForeignKey(Collection.id))
 
     collection = relationship('Collection', back_populates='articles')
     pages = relationship('Page', secondary=page_article_association_table,
                          back_populates='articles', lazy='dynamic', order_by="Page.volume_running_page_num", cascade="all,delete")
-
-
 
     @property
     def serialized(self):
@@ -128,8 +127,9 @@ class Page(Base, Timestamp):
         self.height = kwargs.get('height')
         self.collection_id = kwargs.get('collection_id')
         self.volume_running_page_num = kwargs.get('volume_running_page_num', 0)
+        self.id = self.collection_id + "_" + self.name
 
-    id = Column(UUIDType, default=uuid.uuid4,  primary_key=True)
+    id = Column(String,  primary_key=True)
     name = Column(String, nullable=False)
     label = Column(String)
     format = Column(String, default='image/tiff')
@@ -137,7 +137,7 @@ class Page(Base, Timestamp):
     page_type = Column(Enum(PageType))
     width = Column(Integer)
     height = Column(Integer)
-    collection_id = Column(UUIDType, ForeignKey(Collection.id), nullable=False)
+    collection_id = Column(String, ForeignKey(Collection.id), nullable=False)
     volume_running_page_num = Column(Integer, nullable=False)
     articles = relationship(
         'Article', secondary=page_article_association_table, back_populates='pages')
