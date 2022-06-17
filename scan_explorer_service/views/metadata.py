@@ -20,7 +20,7 @@ def put_article():
             try:
                 article = Article(**json)
                 article_overwrite(session, article)
-                return jsonify({'id': article.id}), 200
+                return jsonify({'id': article.bibcode}), 200
             except:
                 session.rollback()
                 return jsonify(message='Failed to create article'), 500
@@ -93,7 +93,7 @@ def article_search():
                       filter_func in collection_query_translations.items() if key in qs_dict.keys()}
 
     with current_app.session_scope() as session:
-        query = session.query(Article).join(Page, Article.pages)
+         query = session.query(Article).join(Page, Article.pages)
         for key, filter_func in query_trans.items():
             query = query.filter(filter_func(qs_dict.get(key)))
 
@@ -103,13 +103,22 @@ def article_search():
                 query = query.filter(filter_func(qs_dict.get(key)))
 
         if 'full' in qs_dict.keys():
-            item_ids = [str(a.id) for a in query.options(load_only('id')).all()]
-            es_ids = text_search_aggregate_ids(
-                qs_dict.get('full'), EsFields.article_id, item_ids)
-            query = query.filter(Article.id.in_(es_ids))
+            item_ids = [str(a.bibcode)
+                        for a in query.options(load_only('bibcode')).all()]
+            es_ids, es_counts = text_search_aggregate_ids(
+                qs_dict.get('full'), EsFields.article_id, EsFields.article_id, item_ids)
+            if len(es_ids) > 0:
+                query = session.query(Article).filter(Article.bibcode.in_(es_ids))
+                subq = session.query(
+                    func.unnest(es_ids).label('id'),
+                    func.unnest(es_counts).label('count')
+                ).subquery()
+                query = query.join(subq, Article.bibcode == subq.c.id).order_by(subq.c.count.desc())
+        else:
+            query = query.group_by(Article.bibcode).order_by(Article.collection_id, func.min(Page.volume_running_page_num))
 
-        result: Pagination = query.group_by(
-            Article.id).order_by(Article.collection_id, func.min(Page.volume_running_page_num)).paginate(page, limit, False)
+
+        result: Pagination = query.paginate(page, limit, False)
 
         return jsonify(serialize_result(session, result, qs_dict.get('full', '')))
 
@@ -137,12 +146,19 @@ def collection_search():
         if 'full' in qs_dict.keys():
             item_ids = [str(a.id)
                         for a in query.options(load_only('id')).all()]
-            es_ids = text_search_aggregate_ids(
-                qs_dict.get('full'), EsFields.volume_id, item_ids)
-            query = query.filter(Collection.id.in_(es_ids))
+            es_ids, es_counts = text_search_aggregate_ids(
+                qs_dict.get('full'), EsFields.volume_id, EsFields.volume_id, item_ids)
+            if len(es_ids) > 0:
+                query = session.query(Collection).filter(Collection.id.in_(es_ids))
+                subq = session.query(
+                    func.unnest(es_ids).label('id'),
+                    func.unnest(es_counts).label('count')
+                ).subquery()
+                query = query.join(subq, Collection.id == subq.c.id).order_by(subq.c.count.desc())
+        else:
+            query = query.group_by(Collection.id).order_by(Collection.id)
 
-        result: Pagination = query.group_by(
-            Collection.id).order_by(Collection.id).paginate(page, limit, False)
+        result: Pagination = query.paginate(page, limit, False)
 
         return jsonify(serialize_result(session, result, qs_dict.get('full', '')))
 
@@ -159,28 +175,74 @@ def page_search():
                       filter_func in collection_query_translations.items() if key in qs_dict.keys()}
 
     with current_app.session_scope() as session:
-        query = session.query(Page)
-        for key, filter_func in query_trans.items():
-            query = query.filter(filter_func(qs_dict.get(key)))
+        if 'full' in qs_dict.keys():
+            query =  page_search_text_search(qs_dict)
+        else:
+            query = session.query(Page)
+            for key, filter_func in query_trans.items():
+                query = query.filter(filter_func(qs_dict.get(key)))
+
+            if len(a_query_trans) > 0:
+                query = query.join(Article, Page.articles)
+                for key, filter_func in a_query_trans.items():
+                    query = query.filter(filter_func(qs_dict.get(key)))
+
+            if len(jw_query_trans) > 0:
+                query = query.join(Collection)
+                for key, filter_func in jw_query_trans.items():
+                    query = query.filter(filter_func(qs_dict.get(key)))
+            query = query.group_by(Page.id)
+            query.order_by(Collection.id, Page.volume_running_page_num)
+
+        result: Pagination = query.paginate(page, limit, False)       
+
+        return jsonify(serialize_result(session, result, qs_dict.get('full', '')))
+
+def page_search_text_search(qs_dict):
+    query_trans = {key: filter_func for key,
+                   filter_func in page_query_translations.items() if key in qs_dict.keys()}
+    a_query_trans = {key: filter_func for key,
+                     filter_func in article_query_translations.items() if key in qs_dict.keys()}
+    jw_query_trans = {key: filter_func for key,
+                      filter_func in collection_query_translations.items() if key in qs_dict.keys()}
+
+    with current_app.session_scope() as session:
+        filter_field = None
+        if len(query_trans) > 0:
+            filter_field = EsFields.page_id
+            query = session.query(Page)
+            for key, filter_func in query_trans.items():
+                query = query.filter(filter_func(qs_dict.get(key)))
 
         if len(a_query_trans) > 0:
-            query = query.join(Article, Page.articles)
+            if filter_field == EsFields.page_id:
+                query = query.join(Article, Page.articles)
+            else:
+                filter_field = EsFields.article_id
+                query = session.query(Article)
             for key, filter_func in a_query_trans.items():
                 query = query.filter(filter_func(qs_dict.get(key)))
 
         if len(jw_query_trans) > 0:
-            query = query.join(Collection)
+            if filter_field == EsFields.page_id or filter_field == EsFields.article_id:
+                query = query.join(Collection, Page.collection)
+            else:
+                filter_field = EsFields.volume_id
+                query = session.query(Collection)
+
             for key, filter_func in jw_query_trans.items():
                 query = query.filter(filter_func(qs_dict.get(key)))
 
-        if 'full' in qs_dict.keys():
+        if filter_field:   
             item_ids = [str(a.id)
-                        for a in query.options(load_only('id')).all()]
-            es_ids = text_search_aggregate_ids(
-                qs_dict.get('full'), EsFields.page_id, item_ids)
-            query = query.filter(Page.id.in_(es_ids))
-
-        result: Pagination = query.group_by(
-            Page.id).order_by(Page.collection_id, Page.volume_running_page_num.asc()).paginate(page, limit, False)
-
-        return jsonify(serialize_result(session, result, qs_dict.get('full', '')))
+                    for a in query.options(load_only('id')).all()]
+        else:
+            item_ids = None
+        es_ids,es_counts = text_search_aggregate_ids(
+            qs_dict.get('full'), filter_field, EsFields.page_id, item_ids)
+        if len(es_ids) > 0:
+            query = session.query(Page).filter(Page.id.in_(es_ids))
+            query = query.order_by(Page.collection_id, Page.volume_running_page_num)
+        else:
+            query = session.query(Page).filter(False)
+        return query
