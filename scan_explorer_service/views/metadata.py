@@ -115,7 +115,7 @@ def article_search():
                 ).subquery()
                 query = query.join(subq, Article.bibcode == subq.c.id).order_by(subq.c.count.desc())
         else:
-            query = query.group_by(Article.bibcode).order_by(Article.collection_id, func.min(Page.volume_running_page_num))
+            query = query.group_by(Article.id).order_by(Article.collection_id, func.min(Page.volume_running_page_num))
 
 
         result: Pagination = query.paginate(page, limit, False)
