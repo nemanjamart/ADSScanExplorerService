@@ -99,9 +99,6 @@ class Article(Base, Timestamp):
                          back_populates='articles', lazy='dynamic', order_by="Page.volume_running_page_num", cascade="all,delete")
 
 
-    @property
-    def start_page_number(self):
-        return min(self.pages, key=lambda p: p.volume_running_page_num)
 
     @property
     def serialized(self):

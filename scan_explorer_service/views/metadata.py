@@ -6,7 +6,7 @@ from scan_explorer_service.search_utils import *
 from flask_sqlalchemy import Pagination
 from scan_explorer_service.open_search import EsFields, text_search_aggregate_ids
 from sqlalchemy.orm import load_only
-
+from sqlalchemy import func
 
 bp_metadata = Blueprint('metadata', __name__, url_prefix='/metadata')
 
@@ -93,7 +93,7 @@ def article_search():
                       filter_func in collection_query_translations.items() if key in qs_dict.keys()}
 
     with current_app.session_scope() as session:
-        query = session.query(Article)
+        query = session.query(Article).join(Page, Article.pages)
         for key, filter_func in query_trans.items():
             query = query.filter(filter_func(qs_dict.get(key)))
 
@@ -103,14 +103,13 @@ def article_search():
                 query = query.filter(filter_func(qs_dict.get(key)))
 
         if 'full' in qs_dict.keys():
-            item_ids = [str(a.id)
-                        for a in query.options(load_only('id')).all()]
+            item_ids = [str(a.id) for a in query.options(load_only('id')).all()]
             es_ids = text_search_aggregate_ids(
                 qs_dict.get('full'), EsFields.article_id, item_ids)
             query = query.filter(Article.id.in_(es_ids))
 
         result: Pagination = query.group_by(
-            Article.id).paginate(page, limit, False)
+            Article.id).order_by(Article.collection_id, func.min(Page.volume_running_page_num)).paginate(page, limit, False)
 
         return jsonify(serialize_result(session, result, qs_dict.get('full', '')))
 
@@ -143,7 +142,7 @@ def collection_search():
             query = query.filter(Collection.id.in_(es_ids))
 
         result: Pagination = query.group_by(
-            Collection.id).paginate(page, limit, False)
+            Collection.id).order_by(Collection.id).paginate(page, limit, False)
 
         return jsonify(serialize_result(session, result, qs_dict.get('full', '')))
 
@@ -182,6 +181,6 @@ def page_search():
             query = query.filter(Page.id.in_(es_ids))
 
         result: Pagination = query.group_by(
-            Page.id).paginate(page, limit, False)
+            Page.id).order_by(Page.collection_id, Page.volume_running_page_num.asc()).paginate(page, limit, False)
 
         return jsonify(serialize_result(session, result, qs_dict.get('full', '')))
