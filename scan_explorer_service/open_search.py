@@ -28,7 +28,7 @@ def create_base_query(text: str) -> dict:
 
 
 def create_base_query_filter(text: str, filter_field: EsFields, filter_values: List[str]) -> dict:
-    return {
+    query =  {
         "query": {
             "bool": {
                 "must": {
@@ -38,17 +38,19 @@ def create_base_query_filter(text: str, filter_field: EsFields, filter_values: L
                         "default_operator": "AND"
                     }
                 },
-                "filter": {
-                    "terms": {
-                        filter_field.value: filter_values
-                    }
-                }
             }
         }
     }
-
+    if filter_field:
+        query["query"]["bool"]["filter"] = {
+                "terms": {
+                    filter_field.value: filter_values
+                }
+            }
+    return query
 
 def append_aggregate(query: dict, agg_field: EsFields):
+    query['size'] = 0
     query['aggs'] = {   
         "total_count": {
             "cardinality": {
@@ -56,7 +58,7 @@ def append_aggregate(query: dict, agg_field: EsFields):
             }
         },
         "ids": {
-            "terms": {"field": agg_field.value},
+            "terms": {"field": agg_field.value,  "size": 10000},
             "aggs": {
                 "bucket_sort": {
                     "bucket_sort": {
@@ -64,7 +66,8 @@ def append_aggregate(query: dict, agg_field: EsFields):
                             "_count": {
                                 "order": "desc"
                             }
-                        }]
+                        }],
+                        "size": 10000
                     }
                 }
             }
@@ -99,10 +102,10 @@ def text_search_highlight(text: str, filter_field: EsFields, filter_values: List
             "highlight": hit['highlight']['text']
         }
 
-def text_search_aggregate_ids(text: str, filter_field: EsFields, filter_values: List[str]) -> List[str]:
+def text_search_aggregate_ids(text: str, filter_field: EsFields, aggregate_field: EsFields, filter_values: List[str]) -> List[str]:
     base_query = create_base_query_filter(text, filter_field, filter_values)
-    query = append_aggregate(base_query, filter_field)
+    query = append_aggregate(base_query, aggregate_field)
     es_result = es_search(query)
     es_buckets = es_result['aggregations']['ids']['buckets']
-    return [b.get('key') for b in es_buckets]
+    return [b.get('key') for b in es_buckets], [b.get('doc_count') for b in es_buckets]
 
