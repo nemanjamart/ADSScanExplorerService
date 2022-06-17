@@ -93,7 +93,7 @@ def article_search():
                       filter_func in collection_query_translations.items() if key in qs_dict.keys()}
 
     with current_app.session_scope() as session:
-         query = session.query(Article).join(Page, Article.pages)
+        query = session.query(Article).join(Page, Article.pages)
         for key, filter_func in query_trans.items():
             query = query.filter(filter_func(qs_dict.get(key)))
 
