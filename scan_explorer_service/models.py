@@ -66,6 +66,7 @@ class Collection(Base, Timestamp):
         """Return object data in serializeable format"""
         return {
             'id': self.id,
+            'type': 'collection',
             'journal': self.journal,
             'volume': self.volume,
             'pages': self.pages.count(),
@@ -170,6 +171,7 @@ class Page(Base, Timestamp):
         """Return object data in serializeable format"""
         return {
             'id': self.id,
+            'type': 'page',
             'label': self.label,
             'collection_id': self.collection_id,
             'volume_page_num': self.volume_running_page_num,
