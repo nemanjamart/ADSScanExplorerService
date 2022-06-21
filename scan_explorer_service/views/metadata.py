@@ -191,8 +191,7 @@ def page_search():
                 query = query.join(Collection)
                 for key, filter_func in jw_query_trans.items():
                     query = query.filter(filter_func(qs_dict.get(key)))
-            query = query.group_by(Page.id)
-            query.order_by(Collection.id, Page.volume_running_page_num)
+            query = query.group_by(Page.id).order_by(Page.collection_id, Page.volume_running_page_num)
 
         result: Pagination = query.paginate(page, limit, False)       
 
@@ -238,7 +237,7 @@ def page_search_text_search(qs_dict):
                     for a in query.options(load_only('id')).all()]
         else:
             item_ids = None
-        es_ids,es_counts = text_search_aggregate_ids(
+        es_ids, es_counts = text_search_aggregate_ids(
             qs_dict.get('full'), filter_field, EsFields.page_id, item_ids)
         if len(es_ids) > 0:
             query = session.query(Page).filter(Page.id.in_(es_ids))
