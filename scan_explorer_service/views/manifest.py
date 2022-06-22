@@ -15,7 +15,7 @@ def before_request():
     manifest_factory.set_base_prezi_uri(base_uri)
 
 
-@advertise(scopes=[], rate_limit=[300, 3600*24])
+@advertise(scopes=['api'], rate_limit=[300, 3600*24])
 @bp_manifest.route('/<string:id>/manifest.json', methods=['GET'])
 def get_manifest(id: str):
     """ Creates an IIIF manifest from an article or Collection"""
@@ -35,7 +35,7 @@ def get_manifest(id: str):
             return jsonify(exception='Article not found'), 404
 
 
-@advertise(scopes=[], rate_limit=[300, 3600*24])
+@advertise(scopes=['api'], rate_limit=[300, 3600*24])
 @bp_manifest.route('/canvas/<string:page_id>.json', methods=['GET'])
 def get_canvas(page_id: str):
     """ Creates an IIIF canvas from a page"""
@@ -48,7 +48,7 @@ def get_canvas(page_id: str):
             return jsonify(exception='Page not found'), 404
 
 
-@advertise(scopes=[], rate_limit=[300, 3600*24])
+@advertise(scopes=['api'], rate_limit=[300, 3600*24])
 @bp_manifest.route('/<string:id>/search', methods=['GET'])
 def search(id: str):
     """ Searches the content of an article """

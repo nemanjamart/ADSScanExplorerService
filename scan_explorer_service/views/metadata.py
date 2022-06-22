@@ -82,7 +82,7 @@ def put_page():
         return jsonify(message='Invalid page json'), 400
 
 
-@advertise(scopes=[], rate_limit=[300, 3600*24])
+@advertise(scopes=['api'], rate_limit=[300, 3600*24])
 @bp_metadata.route('/article/search', methods=['GET'])
 def article_search():
     qs_dict, page, limit = parse_query_args(request.args)
@@ -123,7 +123,7 @@ def article_search():
         return jsonify(serialize_result(session, result, qs_dict.get('full', '')))
 
 
-@advertise(scopes=[], rate_limit=[300, 3600*24])
+@advertise(scopes=['api'], rate_limit=[300, 3600*24])
 @bp_metadata.route('/collection/search', methods=['GET'])
 def collection_search():
     qs_dict, page, limit = parse_query_args(request.args)
@@ -163,7 +163,7 @@ def collection_search():
         return jsonify(serialize_result(session, result, qs_dict.get('full', '')))
 
 
-@advertise(scopes=[], rate_limit=[300, 3600*24])
+@advertise(scopes=['api'], rate_limit=[300, 3600*24])
 @bp_metadata.route('/page/search', methods=['GET'])
 def page_search():
     qs_dict, page, limit = parse_query_args(request.args)
