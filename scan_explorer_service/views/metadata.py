@@ -11,7 +11,7 @@ from sqlalchemy import func
 bp_metadata = Blueprint('metadata', __name__, url_prefix='/metadata')
 
 
-@advertise(scopes=['put_article'], rate_limit=[300, 3600*24])
+@advertise(scopes=['ads:scan-explorer'], rate_limit=[300, 3600*24])
 @bp_metadata.route('/article', methods=['PUT'])
 def put_article():
     json = request.get_json()
@@ -28,7 +28,7 @@ def put_article():
         return jsonify(message='Invalid article json'), 400
 
 
-@advertise(scopes=['put_collection'], rate_limit=[300, 3600*24])
+@advertise(scopes=['ads:scan-explorer'], rate_limit=[300, 3600*24])
 @bp_metadata.route('/collection', methods=['PUT'])
 def put_collection():
     json = request.get_json()
@@ -57,7 +57,7 @@ def put_collection():
         return jsonify(message='Invalid collection json'), 400
 
 
-@advertise(scopes=['put_page'], rate_limit=[300, 3600*24])
+@advertise(scopes=['ads:scan-explorer'], rate_limit=[300, 3600*24])
 @bp_metadata.route('/page', methods=['PUT'])
 def put_page():
     json = request.get_json()
@@ -82,7 +82,7 @@ def put_page():
         return jsonify(message='Invalid page json'), 400
 
 
-@advertise(scopes=['article_search'], rate_limit=[300, 3600*24])
+@advertise(scopes=[], rate_limit=[300, 3600*24])
 @bp_metadata.route('/article/search', methods=['GET'])
 def article_search():
     qs_dict, page, limit = parse_query_args(request.args)
@@ -123,7 +123,7 @@ def article_search():
         return jsonify(serialize_result(session, result, qs_dict.get('full', '')))
 
 
-@advertise(scopes=['collection_search'], rate_limit=[300, 3600*24])
+@advertise(scopes=[], rate_limit=[300, 3600*24])
 @bp_metadata.route('/collection/search', methods=['GET'])
 def collection_search():
     qs_dict, page, limit = parse_query_args(request.args)
@@ -163,7 +163,7 @@ def collection_search():
         return jsonify(serialize_result(session, result, qs_dict.get('full', '')))
 
 
-@advertise(scopes=['page_search'], rate_limit=[300, 3600*24])
+@advertise(scopes=[], rate_limit=[300, 3600*24])
 @bp_metadata.route('/page/search', methods=['GET'])
 def page_search():
     qs_dict, page, limit = parse_query_args(request.args)
