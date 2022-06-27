@@ -114,6 +114,8 @@ def article_search():
                     func.unnest(es_counts).label('count')
                 ).subquery()
                 query = query.join(subq, Article.bibcode == subq.c.id).order_by(subq.c.count.desc())
+            else:
+                query = session.query(Article).filter(False)
         else:
             query = query.group_by(Article.id).order_by(Article.collection_id, func.min(Page.volume_running_page_num))
 
@@ -155,6 +157,8 @@ def collection_search():
                     func.unnest(es_counts).label('count')
                 ).subquery()
                 query = query.join(subq, Collection.id == subq.c.id).order_by(subq.c.count.desc())
+            else:
+                query = session.query(Collection).filter(False)
         else:
             query = query.group_by(Collection.id).order_by(Collection.id)
 
