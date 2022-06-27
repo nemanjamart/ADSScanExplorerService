@@ -5,7 +5,7 @@ from flask_limiter.util import get_remote_address
 from flask_discoverer import Discoverer
 
 manifest_factory = ManifestFactoryExtended()
-compress = Compress()
+#compress = Compress()
 limiter = Limiter(key_func = get_remote_address)
 discoverer = Discoverer()
 

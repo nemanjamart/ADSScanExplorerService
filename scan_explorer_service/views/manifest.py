@@ -1,10 +1,12 @@
-from flask import Blueprint, current_app, jsonify, url_for, request
+from flask import Blueprint, Response, current_app, jsonify, url_for, request
+from requests import get
 from scan_explorer_service.extensions import manifest_factory
 from scan_explorer_service.models import Article, Page, Collection
 from flask_discoverer import advertise
 from scan_explorer_service.open_search import EsFields, text_search_highlight
 from urllib import parse as urlparse
 from typing import Union
+import requests
 
 bp_manifest = Blueprint('manifest', __name__, url_prefix='/manifest')
 
@@ -13,6 +15,9 @@ bp_manifest = Blueprint('manifest', __name__, url_prefix='/manifest')
 def before_request():
     base_uri = urlparse.urljoin(request.host_url, bp_manifest.url_prefix)
     manifest_factory.set_base_prezi_uri(base_uri)
+
+    image_proxy = urlparse.urljoin(request.host_url, url_for('proxy.image_proxy', path=''))
+    manifest_factory.set_base_image_uri(image_proxy)
 
 
 @advertise(scopes=['api'], rate_limit=[300, 3600*24])

@@ -1,5 +1,4 @@
-import uuid
-from flask import current_app
+from flask import url_for
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, UniqueConstraint, Enum, Index, or_
 from sqlalchemy.orm import relationship
@@ -150,14 +149,14 @@ class Page(Base, Timestamp):
 
     @property
     def image_url(self):
-        image_api_url = current_app.config.get('IMAGE_API_BASE_URL')
-        return f'{image_api_url}/{self.image_path}'
+        image_api_url = url_for('proxy.image_proxy', path=self.image_path, _external=True)
+        return image_api_url
 
     @property
     def image_path(self):
-        image_path = f'bitmaps%2F{self.collection.type}%2F{self.collection.journal}%2F{self.collection.volume}%2F600'
+        image_path = f'bitmaps-~{self.collection.type}-~{self.collection.journal}-~{self.collection.volume}-~600'
         image_path = image_path.replace('.', '_')
-        image_path += f'%2F{self.name}'
+        image_path += f'-~{self.name}'
         if self.color_type != PageColor.BW:
             image_path += '.tif'
         return image_path

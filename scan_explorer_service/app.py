@@ -11,11 +11,10 @@ def register_extensions(app: ADSFlask):
     Args:
         app (ADSFlask): Application object
     """
-    compress.init_app(app)
+    #compress.init_app(app)
     limiter.init_app(app)
     discoverer.init_app(app)
     
-    manifest_factory.set_base_image_uri(app.config.get('IMAGE_API_BASE_URL'))
     manifest_factory.set_iiif_image_info(2.0, 2)  # Version, ComplianceLevel
 
 
@@ -26,12 +25,16 @@ def register_views(app: ADSFlask):
     """
     app.register_blueprint(bp_manifest)
     app.register_blueprint(bp_metadata)
+    app.register_blueprint(bp_proxy)
 
     @app.after_request
     def after_request(response):
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add('Access-Control-Allow-Headers', '*')
-        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,PATCH,OPTIONS')
+        if not response.headers.get('Access-Control-Allow-Origin'):
+            response.headers.add('Access-Control-Allow-Origin', '*')
+        if not response.headers.get('Access-Control-Allow-Headers'):
+            response.headers.add('Access-Control-Allow-Headers', '*')
+        if not response.headers.get('Access-Control-Allow-Methods'):
+            response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,PATCH,OPTIONS')
         return response
 
 
