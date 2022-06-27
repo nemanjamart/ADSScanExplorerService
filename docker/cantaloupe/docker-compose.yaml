@@ -14,5 +14,6 @@ services:
       - "CANTALOUPE_S3SOURCE_BASICLOOKUPSTRATEGY_BUCKET_NAME=scan-explorer" 
       - "CANTALOUPE_S3SOURCE_ACCESS_KEY_ID=CHANGE_ME"
       - "CANTALOUPE_S3SOURCE_SECRET_KEY=CHANGE_ME"
+      - "CANTALOUPE_SLASH_SUBSTITUTE=-~"
     networks:
       - ads_scan_explorer_network
