@@ -1,4 +1,4 @@
-from flask import url_for
+from flask import current_app, url_for
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, UniqueConstraint, Enum, Index, or_
 from sqlalchemy.orm import relationship
@@ -154,9 +154,10 @@ class Page(Base, Timestamp):
 
     @property
     def image_path(self):
-        image_path = f'bitmaps-~{self.collection.type}-~{self.collection.journal}-~{self.collection.volume}-~600'
+        separator = current_app.config.get('IMAGE_API_SLASH_SUB', '%2F')
+        image_path = f'bitmaps{separator}{self.collection.type}{separator}{self.collection.journal}{separator}{self.collection.volume}{separator}600'
         image_path = image_path.replace('.', '_')
-        image_path += f'-~{self.name}'
+        image_path += f'{separator}{self.name}'
         if self.color_type != PageColor.BW:
             image_path += '.tif'
         return image_path

@@ -5,6 +5,7 @@ ENV = "development"
 IMAGE_API_SERVER = 'http://localhost:8182'
 IMAGE_API_BASE_PATH = '/iiif/2'
 IMAGE_API_BASE_URL = f'{IMAGE_API_SERVER}{IMAGE_API_BASE_PATH}'
+IMAGE_API_SLASH_SUB = '-~' # Must always correspond to the Cantaloupe setting CANTALOUPE_SLASH_SUBSTITUTE
 
 SQLALCHEMY_DATABASE_URI = 'postgres://scan_explorer:scan_explorer@postgres_service/scan_explorer_service'
 SQLALCHEMY_TRACK_MODIFICATIONS = False
