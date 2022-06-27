@@ -37,7 +37,7 @@ def parse_query_args(args):
 
 def serialize_result(db_session, result: Pagination, contentQuery = ''):
     return {'page': result.page, 'pageCount': result.pages, 'limit': result.per_page, 'total': result.total, 'query': contentQuery, 
-    'items': [item.serialized | fetch_ads_metadata(db_session, item.id) for item in result.items]}
+    'items': [{**item.serialized, **fetch_ads_metadata(db_session, item.id)} for item in result.items]}
 
 
 
