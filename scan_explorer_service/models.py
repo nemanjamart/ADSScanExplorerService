@@ -34,7 +34,7 @@ class PageType(enum.Enum):
             elif val.isnumeric() and int(val) == edict.get('value'):
                 return edict.get('enum')
 
-        return PageType.Normal
+        return None
 
 
 class Collection(Base, Timestamp):
