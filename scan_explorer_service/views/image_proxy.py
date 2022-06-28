@@ -31,6 +31,6 @@ def image_proxy(path):
             for chunk in r.raw.stream(decode_content=False):
                 yield chunk
 
-        return Response(generate(), headers=headers)
+        return Response(generate(), status=r.status_code, headers=headers)
 
 
