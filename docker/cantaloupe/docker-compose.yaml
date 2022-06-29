@@ -9,11 +9,22 @@ services:
     container_name: cantaloupe
     ports:
       - "8182:8182"
+    volumes:
+      - ./cache:/var/cache/cantaloupe
     environment:
       - "CANTALOUPE_SOURCE_STATIC=S3Source"
       - "CANTALOUPE_S3SOURCE_BASICLOOKUPSTRATEGY_BUCKET_NAME=scan-explorer" 
       - "CANTALOUPE_S3SOURCE_ACCESS_KEY_ID=CHANGE_ME"
       - "CANTALOUPE_S3SOURCE_SECRET_KEY=CHANGE_ME"
       - "CANTALOUPE_SLASH_SUBSTITUTE=-~"
+      - "CANTALOUPE_S3SOURCE_CHUNKING_ENABLED=false"
+      - "CANTALOUPE_PROCESSOR_STREAM_RETRIEVAL_STRATEGY=CacheStrategy"
+      - "CANTALOUPE_CACHE_SERVER_SOURCE=FilesystemCache" 
+      - "CANTALOUPE_FILESYSTEMCACHE_PATHNAME=/var/cache/cantaloupe"
+      - "CANTALOUPE_CACHE_SERVER_SOURCE_TTL_SECONDS=3600" 
+      - "CANTALOUPE_CACHE_SERVER_WORKER_ENABLED=true" 
+      - "CANTALOUPE_CACHE_SERVER_WORKER_INTERVAL=3600" 
+      - "CANTALOUPE_CACHE_SERVER_DERIVATIVE_ENADLED=true" 
+      - "CANTALOUPE_CACHE_SERVER_DERIVATIVE=HeadCache" 
     networks:
       - ads_scan_explorer_network
