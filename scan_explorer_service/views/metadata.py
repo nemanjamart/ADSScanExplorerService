@@ -86,7 +86,10 @@ def put_page():
 def article_search():
     qs_dict, page, limit = parse_query_args(request.args)
     result = aggregate_search(qs_dict, EsFields.article_id, page, limit)
-    return jsonify(serialize_os_article_result(result, page, limit))
+    text_query = ''
+    if 'full' in qs_dict.keys():
+        text_query = qs_dict['full']
+    return jsonify(serialize_os_article_result(result, page, limit, text_query))
 
 
 @advertise(scopes=['api'], rate_limit=[300, 3600*24])
@@ -94,7 +97,10 @@ def article_search():
 def collection_search():
     qs_dict, page, limit = parse_query_args(request.args)
     result = aggregate_search(qs_dict, EsFields.volume_id, page, limit)
-    return jsonify(serialize_os_collection_result(result, page, limit))
+    text_query = ''
+    if 'full' in qs_dict.keys():
+        text_query = qs_dict['full']
+    return jsonify(serialize_os_collection_result(result, page, limit, text_query))
 
 
 @advertise(scopes=['api'], rate_limit=[300, 3600*24])
@@ -102,4 +108,7 @@ def collection_search():
 def page_search():
     qs_dict, page, limit = parse_query_args(request.args)
     result = page_os_search(qs_dict, page, limit)
-    return jsonify(serialize_os_page_result(result, page, limit))
+    text_query = ''
+    if 'full' in qs_dict.keys():
+        text_query = qs_dict['full']
+    return jsonify(serialize_os_page_result(result, page, limit, text_query))

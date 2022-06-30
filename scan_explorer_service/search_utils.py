@@ -36,7 +36,7 @@ def parse_query_args(args):
     return qs_dict, page, limit
 
 
-def serialize_result(db_session, result: Pagination, contentQuery = ''):
+def serialize_result(db_session, result: Pagination, contentQuery):
     return {'page': result.page, 'pageCount': result.pages, 'limit': result.per_page, 'total': result.total, 'query': contentQuery, 
     'items': [{**item.serialized, **fetch_ads_metadata(db_session, item.id)} for item in result.items]}
 
@@ -49,7 +49,7 @@ def serialize_os_agg_page_bucket(bucket: dict):
     page_number = bucket['_source']['page_number']
     return {'id': id, 'collection_id':volume_id, 'journal': journal, 'volume': volume, 'label':label, 'volume_page_num': page_number}
 
-def serialize_os_page_result(result: dict, page: int, limit: int, contentQuery = ''):
+def serialize_os_page_result(result: dict, page: int, limit: int, contentQuery):
     total_count = result['hits']['total']['value']
     page_count = int(math.ceil(total_count / limit))    
     es_buckets = result['hits']['hits']
@@ -64,7 +64,7 @@ def serialize_os_agg_collection_bucket(bucket: dict):
     return {'id': id, 'journal': journal, 'volume': volume, 'pages': bucket['doc_count']}
 
 
-def serialize_os_collection_result(result: dict, page: int, limit: int, contentQuery = ''):
+def serialize_os_collection_result(result: dict, page: int, limit: int, contentQuery):
     total_count = result['aggregations']['total_count']['value']
     page_count = int(math.ceil(total_count / limit))    
     es_buckets = result['aggregations']['ids']['buckets']
