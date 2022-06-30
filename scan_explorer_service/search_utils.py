@@ -47,7 +47,7 @@ def serialize_os_agg_page_bucket(bucket: dict):
     journal = volume_id[0:5]
     volume = volume_id[5:9]
     page_number = bucket['_source']['page_number']
-    return {'name': id, 'journal': journal, 'volume': volume, 'label':label, 'volume_page_num': page_number}
+    return {'id': id, 'collection_id':volume_id, 'journal': journal, 'volume': volume, 'label':label, 'volume_page_num': page_number}
 
 def serialize_os_page_result(result: dict, page: int, limit: int, contentQuery = ''):
     total_count = result['hits']['total']['value']
