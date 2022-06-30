@@ -1,4 +1,5 @@
 import os
+import math
 import requests
 from scan_explorer_service.models import Article, Collection, Page, PageType
 from flask_sqlalchemy import Pagination
@@ -39,7 +40,49 @@ def serialize_result(db_session, result: Pagination, contentQuery = ''):
     return {'page': result.page, 'pageCount': result.pages, 'limit': result.per_page, 'total': result.total, 'query': contentQuery, 
     'items': [{**item.serialized, **fetch_ads_metadata(db_session, item.id)} for item in result.items]}
 
+def serialize_os_agg_page_bucket(bucket: dict):
+    id = bucket['_source']['page_id']
+    volume_id = bucket['_source']['volume_id']
+    label = bucket['_source']['page_label']
+    journal = volume_id[0:5]
+    volume = volume_id[5:9]
+    page_number = bucket['_source']['page_number']
+    return {'name': id, 'journal': journal, 'volume': volume, 'label':label, 'volume_page_num': page_number}
 
+def serialize_os_page_result(result: dict, page: int, limit: int, contentQuery = ''):
+    total_count = result['hits']['total']['value']
+    page_count = int(math.ceil(total_count / limit))    
+    es_buckets = result['hits']['hits']
+
+    return {'page': page, 'pageCount': page_count, 'limit': limit, 'total': total_count, 'query': contentQuery,
+        'items': [serialize_os_agg_page_bucket(b) for b in es_buckets]}
+
+def serialize_os_agg_collection_bucket(bucket: dict):
+    id = bucket['key']
+    journal = id[0:5]
+    volume = id[5:9]
+    return {'id': id, 'journal': journal, 'volume': volume, 'pages': bucket['doc_count']}
+
+
+def serialize_os_collection_result(result: dict, page: int, limit: int, contentQuery = ''):
+    total_count = result['aggregations']['total_count']['value']
+    page_count = int(math.ceil(total_count / limit))    
+    es_buckets = result['aggregations']['ids']['buckets']
+
+    return {'page': page, 'pageCount': page_count, 'limit': limit, 'total': total_count, 'query': contentQuery,
+        'items': [serialize_os_agg_collection_bucket(b) for b in es_buckets]}
+
+def serialize_os_agg_article_bucket(bucket: dict):
+    id = bucket['key']
+    return {'id': id, 'bibcode': id, 'pages': bucket['doc_count']}
+
+def serialize_os_article_result(result: dict, page: int, limit: int, contentQuery = ''):
+    total_count = result['aggregations']['total_count']['value']
+    page_count = int(math.ceil(total_count / limit))    
+    es_buckets = result['aggregations']['ids']['buckets']
+
+    return {'page': page, 'pageCount': page_count, 'limit': limit, 'total': total_count, 'query': contentQuery,
+        'items': [serialize_os_agg_article_bucket(b) for b in es_buckets]}
 
 def fetch_ads_metadata(session, uuid: str):
     auth_token = os.getenv('ADS_API_AUTH_TOKEN')
