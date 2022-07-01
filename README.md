@@ -11,7 +11,11 @@ docker compose -f docker/service/docker-compose.yaml up -d
 
 ### Cantaloupe
 
-The image server retrieving the images from the S3 Bucket. S3 Bucket keys needs to be edited in the docker compose file docker-compose_cantaloupe.yaml. Then run the docker compose 
+The image server retrieving the images from the S3 Bucket. S3 Bucket keys needs to be edited in the docker compose file docker-compose_cantaloupe.yaml. 
+
+A cache folder is also mounted by default in our compose file to /src/cache. This is for having a local file system cache of the source images which speeds up the loading significantly. Make sure to mount a folder with decent capacity and permissions so that docker can write to it. It's not possible to limit the isze of the cache but the time_to_live. We've set it quite low by default to 1 hour which can be adjusted to keep the size in check. Use the commented enviroment parameter to completely disable the source cache.
+
+Then run the docker compose 
 
 ```
 docker compose -f docker/cantaloupe/docker-compose.yaml up -d
