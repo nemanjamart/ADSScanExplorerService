@@ -11,7 +11,7 @@ bp_manifest = Blueprint('manifest', __name__, url_prefix='/manifest')
 
 @bp_manifest.before_request
 def before_request():
-    base_uri = urlparse.urljoin(request.host_url, current_app.config.get('APP_VIRTUAL_ROOT'), bp_manifest.url_prefix)
+    base_uri = urlparse.urljoin(urlparse.urljoin(request.host_url, current_app.config.get('APP_VIRTUAL_ROOT')), bp_manifest.url_prefix)
     manifest_factory.set_base_prezi_uri(base_uri)
 
     image_proxy = url_for('proxy.image_proxy', path='', _external=True)
