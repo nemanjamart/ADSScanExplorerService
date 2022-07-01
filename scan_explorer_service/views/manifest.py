@@ -1,22 +1,20 @@
-from flask import Blueprint, Response, current_app, jsonify, url_for, request
-from requests import get
+from flask import Blueprint, current_app, jsonify, url_for, request
 from scan_explorer_service.extensions import manifest_factory
 from scan_explorer_service.models import Article, Page, Collection
 from flask_discoverer import advertise
 from scan_explorer_service.open_search import EsFields, text_search_highlight
 from urllib import parse as urlparse
 from typing import Union
-import requests
 
 bp_manifest = Blueprint('manifest', __name__, url_prefix='/manifest')
 
 
 @bp_manifest.before_request
 def before_request():
-    base_uri = urlparse.urljoin(request.host_url, bp_manifest.url_prefix)
+    base_uri = urlparse.urljoin(request.host_url, current_app.config.get('APP_VIRTUAL_ROOT'), bp_manifest.url_prefix)
     manifest_factory.set_base_prezi_uri(base_uri)
 
-    image_proxy = urlparse.urljoin(request.host_url, url_for('proxy.image_proxy', path=''))
+    image_proxy = url_for('proxy.image_proxy', path='', _external=True)
     manifest_factory.set_base_image_uri(image_proxy)
 
 
@@ -31,8 +29,7 @@ def get_manifest(id: str):
 
         if item:
             manifest = manifest_factory.create_manifest(item)
-            search_url = urlparse.urljoin(
-                request.host_url, url_for('manifest.search', id=id))
+            search_url = url_for('manifest.search', id=id, _external=True)
             manifest_factory.add_search_service(manifest, search_url)
 
             return manifest.toJSON(top=True)
@@ -75,8 +72,8 @@ def search(id: str):
 
             for res in results:
                 annotation = annotation_list.annotation(res['page_id'])
-                canvas_slice_url = ''.join([url_for('manifest.get_canvas', page_id=res['page_id'])])
-                annotation.on = urlparse.urljoin(request.url_root, canvas_slice_url)
+                canvas_slice_url = url_for('manifest.get_canvas', page_id=res['page_id'], _external=True)
+                annotation.on = canvas_slice_url
                 highlight_text = "<br><br>".join(res['highlight']).replace("em>", "b>")
                 annotation.text(highlight_text, format="text/html")
 

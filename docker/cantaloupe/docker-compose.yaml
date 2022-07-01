@@ -10,7 +10,7 @@ services:
     ports:
       - "8182:8182"
     volumes:
-      - ./cache:/var/cache/cantaloupe
+      - /src/cache:/var/cache/cantaloupe
     environment:
       - "CANTALOUPE_SOURCE_STATIC=S3Source"
       - "CANTALOUPE_S3SOURCE_BASICLOOKUPSTRATEGY_BUCKET_NAME=scan-explorer" 
