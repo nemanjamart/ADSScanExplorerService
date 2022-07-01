@@ -87,8 +87,8 @@ def article_search():
     qs_dict, page, limit = parse_query_args(request.args)
     result = aggregate_search(qs_dict, EsFields.article_id, page, limit)
     text_query = ''
-    if 'full' in qs_dict.keys():
-        text_query = qs_dict['full']
+    if SearchOptions.FullText.value in qs_dict.keys():
+        text_query = qs_dict[SearchOptions.FullText.value]
     return jsonify(serialize_os_article_result(result, page, limit, text_query))
 
 
@@ -98,8 +98,8 @@ def collection_search():
     qs_dict, page, limit = parse_query_args(request.args)
     result = aggregate_search(qs_dict, EsFields.volume_id, page, limit)
     text_query = ''
-    if 'full' in qs_dict.keys():
-        text_query = qs_dict['full']
+    if SearchOptions.FullText.value in qs_dict.keys():
+        text_query = qs_dict[SearchOptions.FullText.value]
     return jsonify(serialize_os_collection_result(result, page, limit, text_query))
 
 
@@ -109,6 +109,6 @@ def page_search():
     qs_dict, page, limit = parse_query_args(request.args)
     result = page_os_search(qs_dict, page, limit)
     text_query = ''
-    if 'full' in qs_dict.keys():
-        text_query = qs_dict['full']
+    if SearchOptions.FullText.value in qs_dict.keys():
+        text_query = qs_dict[SearchOptions.FullText.value]
     return jsonify(serialize_os_page_result(result, page, limit, text_query))

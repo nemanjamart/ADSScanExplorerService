@@ -2,7 +2,7 @@ from typing import Dict, Iterator, List
 from opensearchpy import OpenSearch
 from flask import current_app
 from enum import Enum
-from typing import Union
+from scan_explorer_service.search_utils import SearchOptions
 
 
 class EsFields(str, Enum):
@@ -12,13 +12,13 @@ class EsFields(str, Enum):
 
 
 query_translations = dict({
-    'bibstem': lambda val: wildcard_search('volume_id_lowercase', val),
-    'bibcode': lambda val: wildcard_search('article_bibcodes_lowercase', val),
-    'journal': lambda val: keyword_search('journal', val),
-    'pagetype': lambda val: keyword_search('page_type', val),
-    'page_collection': lambda val: keyword_search('page_number', val),
-    'page': lambda val: text_search('page_label', val),
-    'full': lambda val: text_search('text', val)
+    SearchOptions.Bibstem.value: lambda val: wildcard_search('volume_id_lowercase', val),
+    SearchOptions.Bibcode.value: lambda val: wildcard_search('article_bibcodes_lowercase', val),
+    SearchOptions.Volume.value: lambda val: volume_search('volume', val),
+    SearchOptions.PageType.value: lambda val: keyword_search('page_type', val),
+    SearchOptions.PageCollection.value: lambda val: keyword_search('page_number', val),
+    SearchOptions.PageLabel.value: lambda val: text_search('page_label', val),
+    SearchOptions.FullText.value: lambda val: text_search('text', val)
 })
 
 def wildcard_search(field: str, key: str):
@@ -30,6 +30,15 @@ def wildcard_search(field: str, key: str):
             field:{
                 "value": key + "*"
             }
+        }
+    }
+
+def volume_search(field: str, key: str):
+    for i in range(len(key), 4):
+        key = "0" + key
+    return {
+        "term":{
+            field:key
         }
     }
 

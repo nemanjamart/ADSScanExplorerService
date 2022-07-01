@@ -1,29 +1,21 @@
 import os
 import math
 import requests
-from scan_explorer_service.models import Article, Collection, Page, PageType
+from scan_explorer_service.models import Article
 from flask_sqlalchemy import Pagination
 from flask import current_app
 import shlex
+import enum
 
-
-
-collection_query_translations = dict({
-    'bibstem': lambda val: Collection.journal.ilike(f'{val}%'),
-    'journal': lambda val: Collection.journal.ilike(f'{val}%'),
-    'volume': lambda val: Collection.volume.ilike(f'%{val}%'),
-})
-
-article_query_translations = dict({
-    'bibcode': (lambda val: Article.bibcode.ilike(f'{val}%')),
-})
-
-page_query_translations = dict({
-    'page': lambda val: Page.label == val,
-    'page_collection': lambda val: Page.volume_running_page_num == val,
-    'pagetype': lambda val: Page.page_type == PageType.from_string(val)
-})
-
+class SearchOptions(enum.Enum):
+    """Available Search Options"""
+    Bibcode = 'bibcode'
+    Bibstem = 'bibstem'
+    FullText = 'full'
+    PageCollection = 'page_collection'
+    PageLabel = 'page'
+    PageType = 'pagetype'
+    Volume = 'volume'
 
 def parse_query_args(args):
     qs = args.get('q', '', str)
@@ -34,7 +26,6 @@ def parse_query_args(args):
     limit = args.get('limit', 10, int)
 
     return qs_dict, page, limit
-
 
 def serialize_result(db_session, result: Pagination, contentQuery):
     return {'page': result.page, 'pageCount': result.pages, 'limit': result.per_page, 'total': result.total, 'query': contentQuery, 
