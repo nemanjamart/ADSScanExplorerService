@@ -1,4 +1,6 @@
+
 from flask import Blueprint, current_app, jsonify, url_for, request
+from flask_restful import abort
 from scan_explorer_service.extensions import manifest_factory
 from scan_explorer_service.models import Article, Page, Collection
 from flask_discoverer import advertise
@@ -11,12 +13,16 @@ bp_manifest = Blueprint('manifest', __name__, url_prefix='/manifest')
 
 @bp_manifest.before_request
 def before_request():
-    base_uri = urlparse.urljoin(urlparse.urljoin(request.host_url, current_app.config.get('APP_VIRTUAL_ROOT')), bp_manifest.url_prefix)
+    base_uri = url_for('.root', _external=True)
     manifest_factory.set_base_prezi_uri(base_uri)
 
     image_proxy = url_for('proxy.image_proxy', path='', _external=True)
     manifest_factory.set_base_image_uri(image_proxy)
 
+
+@bp_manifest.route('/')
+def root():
+    abort(404)
 
 @advertise(scopes=['api'], rate_limit=[300, 3600*24])
 @bp_manifest.route('/<string:id>/manifest.json', methods=['GET'])
