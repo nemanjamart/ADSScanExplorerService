@@ -7,18 +7,26 @@ from scan_explorer_service.search_utils import SearchOptions
 
 class EsFields(str, Enum):
     article_id = 'article_bibcodes'
+    article_id_lowercase = 'article_bibcodes_lowercase'
     volume_id = 'volume_id'
+    volume_id_lowercase = 'volume_id_lowercase'
     page_id = 'page_id'
+    text = 'text'
+    journal = 'page_id'
+    volume = 'page_id'
+    page_type = 'page_type'
+    page_number = 'page_number'
+    page_label = 'page_label'
 
 
 query_translations = dict({
-    SearchOptions.Bibstem.value: lambda val: wildcard_search('volume_id_lowercase', val),
-    SearchOptions.Bibcode.value: lambda val: wildcard_search('article_bibcodes_lowercase', val),
-    SearchOptions.Volume.value: lambda val: volume_search('volume', val),
-    SearchOptions.PageType.value: lambda val: keyword_search('page_type', val),
-    SearchOptions.PageCollection.value: lambda val: keyword_search('page_number', val),
-    SearchOptions.PageLabel.value: lambda val: text_search('page_label', val),
-    SearchOptions.FullText.value: lambda val: text_search('text', val)
+    SearchOptions.Bibstem.value: lambda val: wildcard_search(EsFields.volume_id_lowercase.name, val),
+    SearchOptions.Bibcode.value: lambda val: wildcard_search(EsFields.article_id_lowercase.name, val),
+    SearchOptions.Volume.value: lambda val: volume_search(EsFields.volume.name, val),
+    SearchOptions.PageType.value: lambda val: keyword_search(EsFields.page_type.name, val),
+    SearchOptions.PageCollection.value: lambda val: keyword_search(EsFields.page_number.name, val),
+    SearchOptions.PageLabel.value: lambda val: text_search(EsFields.page_label.name, val),
+    SearchOptions.FullText.value: lambda val: text_search(EsFields.text.name, val)
 })
 
 def wildcard_search(field: str, key: str):
@@ -57,21 +65,6 @@ def text_search(field: str, text: str):
                 "default_operator": "AND"
             }
         }
-
-def create_base_query(text: str) -> dict:
-    return {
-        "query": {
-            "bool": {
-                "must": {
-                    "query_string": {
-                        "query": text,
-                        "default_field": "text",
-                        "default_operator": "AND"
-                    }
-                }
-            }
-        }
-    }
 
 def create_filter_query(qs_dict: dict):
 
@@ -190,10 +183,3 @@ def aggregate_search(qs_dict: Dict, aggregate_field, page, limit):
     query = append_aggregate(query, aggregate_field, page, limit)
     es_result = es_search(query)
     return es_result
-
-def text_search_aggregate_ids(text: str, filter_field: EsFields, aggregate_field: EsFields, filter_values: List[str]) -> List[str]:
-    base_query = create_base_query_filter(text, filter_field, filter_values)
-    query = append_aggregate(base_query, aggregate_field)
-    return es_search(query)
-
-

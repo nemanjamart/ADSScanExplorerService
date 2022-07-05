@@ -1,11 +1,13 @@
 import os
 import math
 import requests
+from scan_explorer_service.models import PageType
 from scan_explorer_service.models import Article
 from flask_sqlalchemy import Pagination
 from flask import current_app
 import shlex
 import enum
+import re
 
 class SearchOptions(enum.Enum):
     """Available Search Options"""
@@ -18,14 +20,42 @@ class SearchOptions(enum.Enum):
     Volume = 'volume'
 
 def parse_query_args(args):
-    qs = args.get('q', '', str)
+    qs = re.sub(':\s*', ':', args.get('q', '', str))
     qs_arr = [q for q in shlex.split(qs) if ':' in q]
-    qs_dict = dict(kv.split(':') for kv in qs_arr)
+    qs_dict = {}
+    for kv in qs_arr:
+        kv_arr = kv.split(':', maxsplit=1)
+        if len(kv_arr) == 2:
+            qs_dict[kv_arr[0].lower()] = kv_arr[1].strip()
+    check_query(qs_dict)
 
     page = args.get('page', 1, int)
     limit = args.get('limit', 10, int)
 
     return qs_dict, page, limit
+
+def check_query(qs_dict: dict):
+    """
+        Checks that all queries have correct keys
+    """
+    for key in qs_dict.keys():
+        # Will raise error if not in enum
+        SearchOptions(key)
+    
+    check_page_type(qs_dict)
+
+def check_page_type(qs_dict: dict): 
+    if SearchOptions.PageType.value in qs_dict.keys():
+        page_type = qs_dict[SearchOptions.PageType.value]
+        valid_types = [p.name for p in PageType]
+        if page_type in valid_types:
+            return
+        # Check lowercased and updated to cased
+        for p in PageType:
+            if page_type.lower() == p.name.lower():
+                qs_dict[SearchOptions.PageType.value] = p.name
+                return
+        raise Exception("%s is not a valid page type, %s is possible choices"% (page_type, str(valid_types)))
 
 def serialize_result(db_session, result: Pagination, contentQuery):
     return {'page': result.page, 'pageCount': result.pages, 'limit': result.per_page, 'total': result.total, 'query': contentQuery, 
@@ -80,7 +110,7 @@ def fetch_ads_metadata(session, uuid: str):
     if auth_token:
         article = session.query(Article).filter_by(id=uuid).one_or_none()
         if article:
-            params = {'q': f'bibcode:{article.bibcode}', 'fl':'title,author'}
+            params = {'q': f'bibcode:{article.bibcode}', 'fl':'title,author'}   
             headers = {'Authorization': f'Bearer {auth_token}'}
             response = requests.get(current_app.config.get('ADS_API_URL'), params, headers=headers).json()
             docs = response.get('response').get('docs')
