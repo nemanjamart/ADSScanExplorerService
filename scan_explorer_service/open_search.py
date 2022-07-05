@@ -17,6 +17,8 @@ class EsFields(str, Enum):
     page_type = 'page_type'
     page_number = 'page_number'
     page_label = 'page_label'
+    page_color = 'page_color'
+    project = 'project'
 
 
 query_translations = dict({
@@ -26,6 +28,8 @@ query_translations = dict({
     SearchOptions.PageType.value: lambda val: keyword_search(EsFields.page_type.name, val),
     SearchOptions.PageCollection.value: lambda val: keyword_search(EsFields.page_number.name, val),
     SearchOptions.PageLabel.value: lambda val: text_search(EsFields.page_label.name, val),
+    SearchOptions.PageColor.value: lambda val: keyword_search(EsFields.page_color.name, val),
+    SearchOptions.Project.value: lambda val: keyword_search(EsFields.project.name, val),
     SearchOptions.FullText.value: lambda val: text_search(EsFields.text.name, val)
 })
 
@@ -71,7 +75,7 @@ def create_filter_query(qs_dict: dict):
     query_trans = {key: filter_func for key,
                    filter_func in query_translations.items() if key in qs_dict.keys()}
     if len(query_trans) ==  0:
-        raise Exception("Empty")
+        raise Exception("No valid keyword specified")
 
     filters = []
     for key, filter_func in query_trans.items():

@@ -1,8 +1,7 @@
 import os
 import math
 import requests
-from scan_explorer_service.models import PageType
-from scan_explorer_service.models import Article
+from scan_explorer_service.models import Article, PageType, PageColor
 from flask_sqlalchemy import Pagination
 from flask import current_app
 import shlex
@@ -17,6 +16,8 @@ class SearchOptions(enum.Enum):
     PageCollection = 'page_collection'
     PageLabel = 'page'
     PageType = 'pagetype'
+    PageColor = 'pagecolor'
+    Project = 'project'
     Volume = 'volume'
 
 def parse_query_args(args):
@@ -41,8 +42,9 @@ def check_query(qs_dict: dict):
     for key in qs_dict.keys():
         # Will raise error if not in enum
         SearchOptions(key)
-    
     check_page_type(qs_dict)
+    check_page_color(qs_dict)
+    check_project(qs_dict)
 
 def check_page_type(qs_dict: dict): 
     if SearchOptions.PageType.value in qs_dict.keys():
@@ -56,6 +58,33 @@ def check_page_type(qs_dict: dict):
                 qs_dict[SearchOptions.PageType.value] = p.name
                 return
         raise Exception("%s is not a valid page type, %s is possible choices"% (page_type, str(valid_types)))
+
+def check_page_color(qs_dict: dict): 
+    if SearchOptions.PageColor.value in qs_dict.keys():
+        page_color = qs_dict[SearchOptions.PageColor.value]
+        valid_types = [p.name for p in PageColor]
+        if page_color in valid_types:
+            return
+        # Check lowercased and updated to cased
+        for p in PageColor:
+            if page_color.lower() == p.name.lower():
+                qs_dict[SearchOptions.PageColor.value] = p.name
+                return
+        raise Exception("%s is not a valid page color, %s is possible choices"% (page_color, str(valid_types)))
+
+def check_project(qs_dict: dict): 
+    if SearchOptions.Project.value in qs_dict.keys():
+        project = qs_dict[SearchOptions.Project.value]
+        valid_types = ['PHaEDRA', 'Historical Literature', 'Microfilm Scanning']
+        if project in valid_types:
+            qs_dict[SearchOptions.Project.value] =  project.replace('Microfilm Scanning', 'Historical Literature')
+            return
+        # Check lowercased and updated to cased
+        for p in valid_types:
+            if project.lower() == p.lower():
+                qs_dict[SearchOptions.Project.value] = p.replace('Microfilm Scanning', 'Historical Literature')
+                return
+        raise Exception("%s is not a valid project, %s is possible choices"% (project, str(valid_types)))
 
 def serialize_result(db_session, result: Pagination, contentQuery):
     return {'page': result.page, 'pageCount': result.pages, 'limit': result.per_page, 'total': result.total, 'query': contentQuery, 
