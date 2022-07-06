@@ -1,9 +1,10 @@
-from flask import Blueprint, Response, current_app, request, stream_with_context, jsonify, redirect
+from flask import Blueprint, Response, current_app, request, stream_with_context, jsonify, redirect, url_for
 from flask_discoverer import advertise
 from urllib import parse as urlparse
 import requests
 from scan_explorer_service.models import Article, Collection, Page
 from scan_explorer_service.utils.db_utils import item_thumbnail
+from scan_explorer_service.utils.utils import url_for_proxy
 
 
 bp_proxy = Blueprint('proxy', __name__, url_prefix='/image')
@@ -41,6 +42,9 @@ def image_proxy_thumbnail():
         type = request.args.get('type')
         with current_app.session_scope() as session:
             thumbnail_path = item_thumbnail(session, id, type)
-            return redirect(thumbnail_path)
+            path = urlparse.urlparse(thumbnail_path).path
+            remove = urlparse.urlparse(url_for_proxy('proxy.image_proxy', path='')).path
+            path = path.replace(remove, '')
+            return image_proxy(path)
     except Exception as e:
         return jsonify(Message=str(e)), 400
