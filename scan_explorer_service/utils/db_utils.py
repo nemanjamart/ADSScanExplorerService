@@ -75,3 +75,27 @@ def article_overwrite(session, article):
 def page_overwrite(session, page):
     persisted = page_get(session, page.collection_id, page.name, page.volume_running_page_num)
     overwrite(session, page, persisted)
+
+def article_thumbnail(session, id):
+    page = session.query(Page).join(Article, Page.articles).filter(
+                Article.id == id).order_by(Page.volume_running_page_num.asc()).first()
+    return page.thumbnail_url
+
+def collection_thumbnail(session, id):
+    page = session.query(Page).filter(Page.collection_id == id).order_by(
+        Page.volume_running_page_num.asc()).first()
+    return page.thumbnail_url
+
+def page_thumbnail(session, id):
+    page = session.query(Page).filter(Page.id == id).one()
+    return page.thumbnail_url
+
+def item_thumbnail(session, id, type):
+    if type == 'page':
+        return page_thumbnail(session, id)
+    elif type == 'article':
+        return article_thumbnail(session, id)
+    elif type == 'collection':
+        return collection_thumbnail(session, id)
+    else:
+        raise Exception("Invalid type")
