@@ -2,7 +2,7 @@ from typing import Dict, Iterator, List
 from opensearchpy import OpenSearch
 from flask import current_app
 from enum import Enum
-from scan_explorer_service.search_utils import SearchOptions
+from scan_explorer_service.utils.search_utils import SearchOptions
 
 
 class EsFields(str, Enum):

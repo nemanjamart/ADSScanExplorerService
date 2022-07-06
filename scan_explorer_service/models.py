@@ -1,8 +1,9 @@
-from flask import current_app, url_for
+from flask import current_app
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, UniqueConstraint, Enum, Index, or_
 from sqlalchemy.orm import relationship
 from sqlalchemy_utils.models import Timestamp
+from scan_explorer_service.utils.utils import url_for_proxy
 import enum
 
 Base = declarative_base()
@@ -149,7 +150,7 @@ class Page(Base, Timestamp):
 
     @property
     def image_url(self):
-        image_api_url = url_for('proxy.image_proxy', path=self.image_path, _external=True)
+        image_api_url = url_for_proxy('proxy.image_proxy', path=self.image_path)
         return image_api_url
 
     @property

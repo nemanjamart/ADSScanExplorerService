@@ -1,8 +1,8 @@
 from flask import Blueprint, current_app, jsonify, request
-from scan_explorer_service.db_utils import article_get_or_create, article_overwrite, collection_overwrite, page_get_or_create, page_overwrite
+from scan_explorer_service.utils.db_utils import article_get_or_create, article_overwrite, collection_overwrite, page_get_or_create, page_overwrite
 from scan_explorer_service.models import Article, Collection, Page
 from flask_discoverer import advertise
-from scan_explorer_service.search_utils import *
+from scan_explorer_service.utils.search_utils import *
 from scan_explorer_service.views.view_utils import ApiErrors
 from scan_explorer_service.open_search import EsFields, page_os_search, aggregate_search
 from sqlalchemy.orm import load_only

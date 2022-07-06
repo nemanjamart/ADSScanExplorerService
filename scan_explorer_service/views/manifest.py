@@ -1,22 +1,23 @@
 
-from flask import Blueprint, current_app, jsonify, url_for, request
+from flask import Blueprint, current_app, jsonify, request
 from flask_restful import abort
 from scan_explorer_service.extensions import manifest_factory
 from scan_explorer_service.models import Article, Page, Collection
 from flask_discoverer import advertise
 from scan_explorer_service.open_search import EsFields, text_search_highlight
-from urllib import parse as urlparse
+from scan_explorer_service.utils.utils import url_for_proxy
 from typing import Union
+
 
 bp_manifest = Blueprint('manifest', __name__, url_prefix='/manifest')
 
 
 @bp_manifest.before_request
 def before_request():
-    base_uri = url_for('.root', _external=True)
+    base_uri = url_for_proxy('manifest.root')
     manifest_factory.set_base_prezi_uri(base_uri)
 
-    image_proxy = url_for('proxy.image_proxy', path='', _external=True)
+    image_proxy = url_for_proxy('proxy.image_proxy', path='')
     manifest_factory.set_base_image_uri(image_proxy)
 
 
@@ -35,7 +36,7 @@ def get_manifest(id: str):
 
         if item:
             manifest = manifest_factory.create_manifest(item)
-            search_url = url_for('manifest.search', id=id, _external=True)
+            search_url = url_for_proxy('manifest.search', id=id)
             manifest_factory.add_search_service(manifest, search_url)
 
             return manifest.toJSON(top=True)
@@ -78,7 +79,7 @@ def search(id: str):
 
             for res in results:
                 annotation = annotation_list.annotation(res['page_id'])
-                canvas_slice_url = url_for('manifest.get_canvas', page_id=res['page_id'], _external=True)
+                canvas_slice_url = url_for_proxy('manifest.get_canvas', page_id=res['page_id'])
                 annotation.on = canvas_slice_url
                 highlight_text = "<br><br>".join(res['highlight']).replace("em>", "b>")
                 annotation.text(highlight_text, format="text/html")

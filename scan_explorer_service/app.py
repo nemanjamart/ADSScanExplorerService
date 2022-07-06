@@ -3,7 +3,6 @@ import sys
 from adsmutils import ADSFlask
 from .views import *
 from .extensions import *
-from werkzeug.middleware.proxy_fix import ProxyFix
 
 def register_extensions(app: ADSFlask):
     """ Register extensions.
@@ -62,7 +61,6 @@ def create_app(**config):
         app.debug = True
         manifest_factory.set_debug("error_on_warning")
     else:
-        app = ProxyFix(app, x_for=1, x_proto=1, x_prefix=1)
         manifest_factory.set_debug("error")
 
     return app

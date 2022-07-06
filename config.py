@@ -2,6 +2,8 @@ LOG_STDOUT = True
 LOGGING_LEVEL = "DEBUG"
 ENV = "development"
 
+PROXY_SERVER = "http://localhost:8184"
+PROXY_PREFIX = "/v1/scan"
 
 IMAGE_API_SERVER = 'http://localhost:8182'
 IMAGE_API_BASE_PATH = '/iiif/2'
