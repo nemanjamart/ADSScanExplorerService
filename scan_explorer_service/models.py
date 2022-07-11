@@ -78,7 +78,7 @@ page_article_association_table = Table('page2article', Base.metadata,
                                        Column('page_id', ForeignKey(
                                            'page.id'), primary_key=True),
                                        Column('article_id', ForeignKey(
-                                           'article.bibcode'), primary_key=True)
+                                           'article.id'), primary_key=True)
                                        )
 
 
@@ -93,7 +93,7 @@ class Article(Base, Timestamp):
         self.collection_id = collection_id
 
     id = Column(String, primary_key=True)
-    bibcode = Column(String, primary_key=True)
+    bibcode = Column(String)
     collection_id = Column(String, ForeignKey(Collection.id))
 
     collection = relationship('Collection', back_populates='articles')

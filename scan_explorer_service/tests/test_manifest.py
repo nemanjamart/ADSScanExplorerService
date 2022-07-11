@@ -20,9 +20,10 @@ class TestManifest(TestCaseDatabase):
         })
 
     def setUp(self):
+        Base.metadata.drop_all(bind=self.app.db.engine)
         Base.metadata.create_all(bind=self.app.db.engine)
 
-        self.collection = Collection('type', 'journal', 'volume')
+        self.collection = Collection(type = 'type', journal = 'journal', volume = 'volume')
         self.app.db.session.add(self.collection)
         self.app.db.session.commit()
         self.app.db.session.refresh(self.collection)
@@ -33,7 +34,7 @@ class TestManifest(TestCaseDatabase):
         self.app.db.session.commit()
         self.app.db.session.refresh(self.article)
 
-        self.page = Page('page', self.collection.id)
+        self.page = Page(name='page', collection_id = self.collection.id)
         self.page.width = 1000
         self.page.height = 1000
         self.page.label = 'label'
@@ -57,7 +58,6 @@ class TestManifest(TestCaseDatabase):
         url = url_for("manifest.get_canvas", page_id=self.page.id)
         r = self.client.get(url)
         data = json.loads(r.data)
-
         self.assertStatus(r, 200)
         self.assertEqual(data['@type'], 'sc:Canvas')
 

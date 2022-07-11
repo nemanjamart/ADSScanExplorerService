@@ -1,5 +1,5 @@
 from typing import Dict, Iterator, List
-from opensearchpy import OpenSearch
+import opensearchpy
 from flask import current_app
 from enum import Enum
 from scan_explorer_service.utils.search_utils import SearchOptions
@@ -159,7 +159,7 @@ def append_highlight(query: dict):
 
 
 def es_search(query: dict) -> Iterator[str]:
-    es = OpenSearch(current_app.config.get('OPEN_SEARCH_URL'))
+    es = opensearchpy.OpenSearch(current_app.config.get('OPEN_SEARCH_URL'))
     resp = es.search(index=current_app.config.get(
         'OPEN_SEARCH_INDEX'), body=query)
     return resp
