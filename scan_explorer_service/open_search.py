@@ -184,6 +184,5 @@ def page_os_search(qs_dict: Dict, page, limit):
 def aggregate_search(qs_dict: Dict, aggregate_field, page, limit):
     query = create_filter_query(qs_dict)
     query = append_aggregate(query, aggregate_field, page, limit)
-    abc = str(query)
     es_result = es_search(query)
     return es_result
