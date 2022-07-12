@@ -5,11 +5,27 @@ from flask_discoverer import advertise
 from scan_explorer_service.utils.search_utils import *
 from scan_explorer_service.views.view_utils import ApiErrors
 from scan_explorer_service.open_search import EsFields, page_os_search, aggregate_search
-from sqlalchemy.orm import load_only
-from sqlalchemy import func
+import requests
 
 bp_metadata = Blueprint('metadata', __name__, url_prefix='/metadata')
 
+
+
+@advertise(scopes=['api'], rate_limit=[300, 3600*24])
+@bp_metadata.route('/article/extra/<string:bibcode>', methods=['GET'])
+def article_extra(bibcode: str):
+    auth_token = current_app.config.get('ADS_SEARCH_SERVICE_TOKEN')
+    ads_search_service = current_app.config.get('ADS_SEARCH_SERVICE_URL')
+    if auth_token and ads_search_service:
+        params = {'q': f'bibcode:{bibcode}', 'fl':'title,author'}   
+        headers = {'Authorization': f'Bearer {auth_token}'}
+        response = requests.get(ads_search_service, params, headers=headers).json()
+        docs = response.get('response').get('docs')
+
+        if docs:
+            return docs[0]
+        
+    return {}
 
 @advertise(scopes=['ads:scan-explorer'], rate_limit=[300, 3600*24])
 @bp_metadata.route('/article', methods=['PUT'])

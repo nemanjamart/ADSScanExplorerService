@@ -1,9 +1,5 @@
-import os
 import math
-import requests
-from scan_explorer_service.models import Article, PageType, PageColor
-from flask_sqlalchemy import Pagination
-from flask import current_app
+from scan_explorer_service.models import PageType, PageColor
 import shlex
 import enum
 import re
@@ -86,10 +82,6 @@ def check_project(qs_dict: dict):
                 return
         raise Exception("%s is not a valid project, %s is possible choices"% (project, str(valid_types)))
 
-def serialize_result(db_session, result: Pagination, contentQuery):
-    return {'page': result.page, 'pageCount': result.pages, 'limit': result.per_page, 'total': result.total, 'query': contentQuery, 
-    'items': [{**item.serialized, **fetch_ads_metadata(db_session, item.id)} for item in result.items]}
-
 def serialize_os_agg_page_bucket(bucket: dict):
     id = bucket['_source']['page_id']
     volume_id = bucket['_source']['volume_id']
@@ -134,17 +126,3 @@ def serialize_os_article_result(result: dict, page: int, limit: int, contentQuer
     return {'page': page, 'pageCount': page_count, 'limit': limit, 'total': total_count, 'query': contentQuery,
         'items': [serialize_os_agg_article_bucket(b) for b in es_buckets]}
 
-def fetch_ads_metadata(session, uuid: str):
-    auth_token = os.getenv('ADS_API_AUTH_TOKEN')
-    if auth_token:
-        article = session.query(Article).filter_by(id=uuid).one_or_none()
-        if article:
-            params = {'q': f'bibcode:{article.bibcode}', 'fl':'title,author'}   
-            headers = {'Authorization': f'Bearer {auth_token}'}
-            response = requests.get(current_app.config.get('ADS_API_URL'), params, headers=headers).json()
-            docs = response.get('response').get('docs')
-
-            if docs:
-                return docs[0]
-            
-    return {}
