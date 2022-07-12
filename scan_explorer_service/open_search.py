@@ -12,8 +12,8 @@ class EsFields(str, Enum):
     volume_id_lowercase = 'volume_id_lowercase'
     page_id = 'page_id'
     text = 'text'
-    journal = 'page_id'
-    volume = 'page_id'
+    journal = 'journal'
+    volume = 'volume'
     page_type = 'page_type'
     page_number = 'page_number'
     page_label = 'page_label'
@@ -22,15 +22,15 @@ class EsFields(str, Enum):
 
 
 query_translations = dict({
-    SearchOptions.Bibstem.value: lambda val: wildcard_search(EsFields.volume_id_lowercase.name, val),
-    SearchOptions.Bibcode.value: lambda val: wildcard_search(EsFields.article_id_lowercase.name, val),
-    SearchOptions.Volume.value: lambda val: volume_search(EsFields.volume.name, val),
-    SearchOptions.PageType.value: lambda val: keyword_search(EsFields.page_type.name, val),
-    SearchOptions.PageCollection.value: lambda val: keyword_search(EsFields.page_number.name, val),
-    SearchOptions.PageLabel.value: lambda val: text_search(EsFields.page_label.name, val),
-    SearchOptions.PageColor.value: lambda val: keyword_search(EsFields.page_color.name, val),
-    SearchOptions.Project.value: lambda val: keyword_search(EsFields.project.name, val),
-    SearchOptions.FullText.value: lambda val: text_search(EsFields.text.name, val)
+    SearchOptions.Bibstem.value: lambda val: wildcard_search(EsFields.volume_id_lowercase.value, val),
+    SearchOptions.Bibcode.value: lambda val: wildcard_search(EsFields.article_id_lowercase.value, val),
+    SearchOptions.Volume.value: lambda val: volume_search(EsFields.volume.value, val),
+    SearchOptions.PageType.value: lambda val: keyword_search(EsFields.page_type.value, val),
+    SearchOptions.PageCollection.value: lambda val: keyword_search(EsFields.page_number.value, val),
+    SearchOptions.PageLabel.value: lambda val: text_search(EsFields.page_label.value, val),
+    SearchOptions.PageColor.value: lambda val: keyword_search(EsFields.page_color.value, val),
+    SearchOptions.Project.value: lambda val: keyword_search(EsFields.project.value, val),
+    SearchOptions.FullText.value: lambda val: text_search(EsFields.text.value, val)
 })
 
 def wildcard_search(field: str, key: str):
@@ -78,8 +78,7 @@ def create_filter_query(qs_dict: dict):
         raise Exception("No valid keyword specified")
 
     filters = []
-    for key, filter_func in query_trans.items():
-        filters.append(filter_func(qs_dict.get(key)))
+    for key, filter_func in query_trans.items(): filters.append(filter_func(qs_dict.get(key)))
     query =  {
         "query": {
             "bool": {
@@ -185,5 +184,6 @@ def page_os_search(qs_dict: Dict, page, limit):
 def aggregate_search(qs_dict: Dict, aggregate_field, page, limit):
     query = create_filter_query(qs_dict)
     query = append_aggregate(query, aggregate_field, page, limit)
+    abc = str(query)
     es_result = es_search(query)
     return es_result
