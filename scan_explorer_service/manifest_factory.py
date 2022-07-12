@@ -13,8 +13,8 @@ class ManifestFactoryExtended(ManifestFactory):
 
     def create_manifest(self, item: Union[Article, Collection]):
         manifest = self.manifest(
-            ident=f'{item.id}/manifest.json', label="journal.volume")
-        manifest.description = 'journal.description'
+            ident=f'{item.id}/manifest.json', label=item.id)
+        manifest.description = item.id
         manifest.add_sequence(self.create_sequence(item))
         for range in self.create_range(item):
             manifest.add_range(range)
