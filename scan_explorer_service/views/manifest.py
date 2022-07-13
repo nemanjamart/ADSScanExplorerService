@@ -5,7 +5,7 @@ from scan_explorer_service.extensions import manifest_factory
 from scan_explorer_service.models import Article, Page, Collection
 from flask_discoverer import advertise
 from scan_explorer_service.open_search import EsFields, text_search_highlight
-from scan_explorer_service.utils.utils import url_for_proxy
+from scan_explorer_service.utils.utils import proxy_url, url_for_proxy
 from typing import Union
 
 
@@ -14,16 +14,13 @@ bp_manifest = Blueprint('manifest', __name__, url_prefix='/manifest')
 
 @bp_manifest.before_request
 def before_request():
-    base_uri = url_for_proxy('manifest.root')
+    server, prefix = proxy_url()
+    base_uri = f'{server}/{prefix}/manifest'
     manifest_factory.set_base_prezi_uri(base_uri)
 
     image_proxy = url_for_proxy('proxy.image_proxy', path='')
     manifest_factory.set_base_image_uri(image_proxy)
 
-
-@bp_manifest.route('/')
-def root():
-    abort(404)
 
 @advertise(scopes=['api'], rate_limit=[300, 3600*24])
 @bp_manifest.route('/<string:id>/manifest.json', methods=['GET'])

@@ -10,10 +10,10 @@ import requests
 bp_metadata = Blueprint('metadata', __name__, url_prefix='/metadata')
 
 
-
 @advertise(scopes=['api'], rate_limit=[300, 3600*24])
 @bp_metadata.route('/article/extra/<string:bibcode>', methods=['GET'])
 def article_extra(bibcode: str):
+    """Route that fetches additional metadata about an article from the ADS search service """
     auth_token = current_app.config.get('ADS_SEARCH_SERVICE_TOKEN')
     ads_search_service = current_app.config.get('ADS_SEARCH_SERVICE_URL')
     if auth_token and ads_search_service:
@@ -30,6 +30,7 @@ def article_extra(bibcode: str):
 @advertise(scopes=['ads:scan-explorer'], rate_limit=[300, 3600*24])
 @bp_metadata.route('/article', methods=['PUT'])
 def put_article():
+    """Create a new or overwrite an existing article"""
     json = request.get_json()
     if json:
         with current_app.session_scope() as session:
@@ -47,6 +48,7 @@ def put_article():
 @advertise(scopes=['ads:scan-explorer'], rate_limit=[300, 3600*24])
 @bp_metadata.route('/collection', methods=['PUT'])
 def put_collection():
+    """ Create a new or overwrite an existing collection """
     json = request.get_json()
     if json:
         with current_app.session_scope() as session:
@@ -76,6 +78,7 @@ def put_collection():
 @advertise(scopes=['ads:scan-explorer'], rate_limit=[300, 3600*24])
 @bp_metadata.route('/page', methods=['PUT'])
 def put_page():
+    """Create a new or overwrite an existing page """
     json = request.get_json()
     if json:
         with current_app.session_scope() as session:
@@ -101,6 +104,7 @@ def put_page():
 @advertise(scopes=['api'], rate_limit=[300, 3600*24])
 @bp_metadata.route('/article/search', methods=['GET'])
 def article_search():
+    """Search for an article using one or some of the available keywords"""
     try:
         qs_dict, page, limit = parse_query_args(request.args)
         result = aggregate_search(qs_dict, EsFields.article_id, page, limit)
@@ -115,6 +119,7 @@ def article_search():
 @advertise(scopes=['api'], rate_limit=[300, 3600*24])
 @bp_metadata.route('/collection/search', methods=['GET'])
 def collection_search():
+    """Search for a collection using one or some of the available keywords"""
     try:
         qs_dict, page, limit = parse_query_args(request.args)
         result = aggregate_search(qs_dict, EsFields.volume_id, page, limit)
@@ -128,6 +133,7 @@ def collection_search():
 @advertise(scopes=['api'], rate_limit=[300, 3600*24])
 @bp_metadata.route('/page/search', methods=['GET'])
 def page_search():
+    """Search for a page using one or some of the available keywords"""
     try:
         qs_dict, page, limit = parse_query_args(request.args)
         result = page_os_search(qs_dict, page, limit)

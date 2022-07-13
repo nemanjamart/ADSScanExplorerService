@@ -47,6 +47,5 @@ class TestCaseDatabase(TestCase):
         Base.metadata.create_all(bind=self.app.db.engine)
 
     def tearDown(self):
-        Base.metadata.drop_all(bind=self.app.db.engine)
         self.app.db.session.remove()
         self.app.db.drop_all()

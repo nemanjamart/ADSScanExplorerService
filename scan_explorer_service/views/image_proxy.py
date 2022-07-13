@@ -13,7 +13,7 @@ bp_proxy = Blueprint('proxy', __name__, url_prefix='/image')
 @advertise(scopes=['api'], rate_limit=[300, 3600*24])
 @bp_proxy.route('/iiif/2/<path:path>', methods=['GET'])
 def image_proxy(path):
-
+    """Proxy in between the image server and the user"""
     req_url = urlparse.urljoin(f'{current_app.config.get("IMAGE_API_BASE_URL")}/', path)
     req_headers = {key: value for (key, value) in request.headers if key != 'Host' and key != 'Accept'}
 
@@ -37,6 +37,7 @@ def image_proxy(path):
 @advertise(scopes=['api'], rate_limit=[300, 3600*24])
 @bp_proxy.route('/thumbnail', methods=['GET'])
 def image_proxy_thumbnail():
+    """Helper to generate the correct url for a thumbnail given an ID and type"""
     try:
         id = request.args.get('id')
         type = request.args.get('type')

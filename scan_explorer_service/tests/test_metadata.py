@@ -75,7 +75,7 @@ class TestMetadata(TestCaseDatabase):
         # Fetch     
         url = url_for("metadata.article_search", q='bibcode:' + self.article.bibcode, page=1, limit = 10)
         r = self.client.get(url)
-        expected_query = {'query': {'bool': {'must': [{'wildcard': {'article_id_lowercase': {'value': '1988ApJ...333..341R*'}}}]}}, 'size': 0, 'aggs': {'total_count': {'cardinality': {'field': 'article_bibcodes'}}, 'ids': {'terms': {'field': 'article_bibcodes', 'size': 10000}, 'aggs': {'bucket_sort': {'bucket_sort': {'sort': [{'page_start': {'order': 'asc'}}], 'size': 10, 'from': 0}}, 'page_start': {'min': {'field': 'page_number'}}}}}}
+        expected_query = {'query': {'bool': {'must': [{'wildcard': {'article_bibcodes_lowercase': {'value': '1988ApJ...333..341R*'}}}]}}, 'size': 0, 'aggs': {'total_count': {'cardinality': {'field': 'article_bibcodes'}}, 'ids': {'terms': {'field': 'article_bibcodes', 'size': 10000}, 'aggs': {'bucket_sort': {'bucket_sort': {'sort': [{'page_start': {'order': 'asc'}}], 'size': 10, 'from': 0}}, 'page_start': {'min': {'field': 'page_number'}}}}}}
         call_args, call_kwargs = es.search.call_args
         self.assertEqual(expected_query, call_kwargs.get('body'))
         self.assertStatus(r, 200)
