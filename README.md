@@ -1,29 +1,27 @@
 # ADSScanExplorerService
-## Logic
+
+Micro service and image server for Scan Explorer
 ## Setup
 
 ### ADSScanExplorerService
 
-Start the service by running the docker compose. Make sure to set the correct urls to the db and OpenSearch instance in config.py
+Required configurations, such as database and open search, must be configured in config.py.
+
+#### Running Scan Explorer Service
 ```
 docker compose -f docker/service/docker-compose.yaml up -d
 ```
 
 ### Cantaloupe
 
-The image server retrieving the images from the S3 Bucket. S3 Bucket keys needs to be edited in the docker compose file docker-compose_cantaloupe.yaml. 
+The image server is setup to retrieve images from a S3 Bucket. A key need to be provided in docker-compose_cantaloupe.yaml.
 
-A cache folder is also mounted by default in our compose file to /src/cache. This is for having a local file system cache of the source images which speeds up the loading significantly. Make sure to mount a folder with decent capacity and permissions so that docker can write to it. It's not possible to limit the isze of the cache but the time_to_live. We've set it quite low by default to 1 hour which can be adjusted to keep the size in check. Use the commented enviroment parameter to completely disable the source cache.
+A cache volume is required for good performance and can also be configured in the compose file, this will speed up consequent loads significantly. Make sure to mount a volume with adequate capacity and write permissions. The size of the cache can be controlled with ```CANTALOUPE_CACHE_SERVER_SOURCE_TTL_SECONDS```.
 
-Then run the docker compose 
-
+#### Running Cantaloupe
 ```
 docker compose -f docker/cantaloupe/docker-compose.yaml up -d
 ```
-
-Images should be accessible (if they have been uploaded).
-Example url:
-<http://localhost:8182/iiif/2/bitmaps%2Fseri%2FApJ__%2F0333%2F600%2F0000352.000/full/full/0/default.jpg>
 
 ### Database
 Setup a postgresql container
@@ -39,7 +37,7 @@ docker exec -it postgres_service bash -c "psql -c \"CREATE DATABASE scan_explore
 docker exec -it postgres_service bash -c "psql -c \"GRANT CREATE ON DATABASE scan_explorer_service TO scan_explorer;\""
 ```
 
-Setup the tables by running through the pipeline container:
+Use alembic to setup the tables:
 ```
-docker exec -it ads_scan_explorer_service python setup_db.py [--re-create] 
+alembic upgrade head
 ```
