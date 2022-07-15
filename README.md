@@ -41,3 +41,19 @@ Use alembic to setup the tables:
 ```
 alembic upgrade head
 ```
+
+## Tests
+
+Run tests
+
+```python -m unittest scan_explorer_service/tests/test_*.py```
+
+## Documentation
+
+Generate the appmap definitions
+
+```APPMAP=true python -m appmap.unittest scan_explorer_service/tests/test_*.py```
+
+Generate the OpenAPI documentation based on the appmap definitions
+
+```APPMAP=true npx @appland/appmap openapi --openapi-title "ScanExplorerService" -o service-openapi.yaml```

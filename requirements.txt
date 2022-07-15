@@ -11,3 +11,4 @@ psycopg2-binary==2.9.3
 opensearch-py==2.0.0
 setuptools<58
 alembic==1.8.0
+appmap>=1.1.0.dev0

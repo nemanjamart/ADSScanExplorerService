@@ -1,0 +1,3 @@
+name: ScanExplorerService
+packages:
+- path: scan_explorer_service
