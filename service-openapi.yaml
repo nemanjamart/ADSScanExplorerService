@@ -10,6 +10,39 @@ info:
   title: ScanExplorerService
   version: v1
 paths:
+  /image/iiif/2/{path}:
+    get:
+      responses:
+        '200':
+          content:
+            text/html: {}
+          description: OK
+        '401':
+          content:
+            text/html: {}
+          description: Unauthorized
+      parameters:
+        - name: path
+          in: path
+          schema:
+            type: string
+          required: true
+  /image/thumbnail:
+    get:
+      responses:
+        '200':
+          content:
+            text/html: {}
+          description: OK
+      parameters:
+        - name: id
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
   /manifest/canvas/{page_id}.json:
     get:
       responses:
