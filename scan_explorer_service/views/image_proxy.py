@@ -10,7 +10,7 @@ from scan_explorer_service.utils.utils import url_for_proxy
 bp_proxy = Blueprint('proxy', __name__, url_prefix='/image')
 
 
-@advertise(scopes=['api'], rate_limit=[300, 3600*24])
+@advertise(scopes=['api'], rate_limit=[5000, 3600*24])
 @bp_proxy.route('/iiif/2/<path:path>', methods=['GET'])
 def image_proxy(path):
     """Proxy in between the image server and the user"""
@@ -34,7 +34,7 @@ def image_proxy(path):
     return Response(generate(), status=r.status_code, headers=headers)
 
 
-@advertise(scopes=['api'], rate_limit=[300, 3600*24])
+@advertise(scopes=['api'], rate_limit=[5000, 3600*24])
 @bp_proxy.route('/thumbnail', methods=['GET'])
 def image_proxy_thumbnail():
     """Helper to generate the correct url for a thumbnail given an ID and type"""
