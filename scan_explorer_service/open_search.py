@@ -22,9 +22,9 @@ class EsFields(str, Enum):
 
 
 query_translations = dict({
-    SearchOptions.Bibstem.value: lambda val: wildcard_search(EsFields.volume_id_lowercase.value, val),
-    SearchOptions.Bibcode.value: lambda val: wildcard_search(EsFields.article_id_lowercase.value, val),
-    SearchOptions.Volume.value: lambda val: volume_search(EsFields.volume.value, val),
+    SearchOptions.Bibstem.value: lambda val: keyword_search(EsFields.journal.value, val.ljust(5, '.')),
+    SearchOptions.Bibcode.value: lambda val: keyword_search(EsFields.article_id_lowercase.value, val),
+    SearchOptions.Volume.value: lambda val: keyword_search(EsFields.volume.value, val.rjust(4, '0')),
     SearchOptions.PageType.value: lambda val: keyword_search(EsFields.page_type.value, val),
     SearchOptions.PageCollection.value: lambda val: keyword_search(EsFields.page_number.value, val),
     SearchOptions.PageLabel.value: lambda val: text_search(EsFields.page_label.value, val),
@@ -33,33 +33,21 @@ query_translations = dict({
     SearchOptions.FullText.value: lambda val: text_search(EsFields.text.value, val)
 })
 
-def wildcard_search(field: str, key: str):
-    if len(key) == 9:
-        #Changes leading . in volume to 0 which is the convention in this app but not everywhere on ADS 
-        key = key[0:5] + key[5:9].replace('.','0')
-    return {
-        "wildcard":{
-            field:{
-                "value": key + "*"
+def keyword_search(field: str, key: str):
+    if '*' in key:
+        return {
+            "wildcard":{
+                field:{
+                    "value": key
+                }
+            }           
+        }
+    else:
+        return {
+            "term":{
+                field:key
             }
         }
-    }
-
-def volume_search(field: str, key: str):
-    for i in range(len(key), 4):
-        key = "0" + key
-    return {
-        "term":{
-            field:key
-        }
-    }
-
-def keyword_search(field: str, key: str):
-    return {
-        "term":{
-            field:key
-        }
-    }
 
 def text_search(field: str, text: str):
     return {
