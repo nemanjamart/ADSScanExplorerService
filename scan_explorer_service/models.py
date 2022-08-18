@@ -76,9 +76,9 @@ class Collection(Base, Timestamp):
 
 page_article_association_table = Table('page2article', Base.metadata,
                                        Column('page_id', ForeignKey(
-                                           'page.id'), primary_key=True),
+                                           'page.id'), primary_key=True, index=True),
                                        Column('article_id', ForeignKey(
-                                           'article.id'), primary_key=True)
+                                           'article.id'), primary_key=True, index=True)
                                        )
 
 
@@ -120,7 +120,6 @@ class Page(Base, Timestamp):
 
     def __init__(self, **kwargs):
         self.name = kwargs.get('name')
-        self.label = kwargs.get('label')
         self.format = kwargs.get('format')
         self.color_type = kwargs.get('color_type')
         self.page_type = kwargs.get('page_type')
