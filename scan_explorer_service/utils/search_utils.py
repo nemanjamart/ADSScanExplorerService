@@ -9,7 +9,7 @@ class SearchOptions(enum.Enum):
     Bibcode = 'bibcode'
     Bibstem = 'bibstem'
     FullText = 'full'
-    PageCollection = 'page_collection'
+    PageCollection = 'page_sequence'
     PageLabel = 'page'
     PageType = 'pagetype'
     PageColor = 'pagecolor'
