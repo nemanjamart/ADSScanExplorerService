@@ -106,8 +106,8 @@ def put_page():
 def article_search():
     """Search for an article using one or some of the available keywords"""
     try:
-        qs, qs_dict, page, limit = parse_query_args(request.args)
-        result = aggregate_search(qs, EsFields.article_id, page, limit)
+        qs, qs_dict, page, limit, sort = parse_query_args(request.args)
+        result = aggregate_search(qs, EsFields.article_id, page, limit, sort)
         text_query = ''
         if SearchOptions.FullText.value in qs_dict.keys():
             text_query = qs_dict[SearchOptions.FullText.value]
@@ -121,8 +121,8 @@ def article_search():
 def collection_search():
     """Search for a collection using one or some of the available keywords"""
     try:
-        qs, qs_dict, page, limit = parse_query_args(request.args)
-        result = aggregate_search(qs, EsFields.volume_id, page, limit)
+        qs, qs_dict, page, limit, sort = parse_query_args(request.args)
+        result = aggregate_search(qs, EsFields.volume_id, page, limit, sort)
         text_query = ''
         if SearchOptions.FullText.value in qs_dict.keys():
             text_query = qs_dict[SearchOptions.FullText.value]
@@ -135,8 +135,8 @@ def collection_search():
 def page_search():
     """Search for a page using one or some of the available keywords"""
     try:
-        qs, qs_dict, page, limit = parse_query_args(request.args)
-        result = page_os_search(qs, page, limit)
+        qs, qs_dict, page, limit, sort = parse_query_args(request.args)
+        result = page_os_search(qs, page, limit, sort)
         text_query = ''
         if SearchOptions.FullText.value in qs_dict.keys():
             text_query = qs_dict[SearchOptions.FullText.value]

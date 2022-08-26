@@ -1,8 +1,7 @@
 from typing import Dict, Iterator, List
 import opensearchpy
 from flask import current_app
-from enum import Enum
-from scan_explorer_service.utils.search_utils import EsFields
+from scan_explorer_service.utils.search_utils import EsFields, OrderOptions
 
 def create_query_string_query(query_string: str):
     query =  {
@@ -37,15 +36,22 @@ def create_base_query_filter(text: str, filter_field: EsFields, filter_values: L
                 }
             }
     return query
-
-def append_aggregate(query: dict, agg_field: EsFields, page: int, size: int):
+ 
+def append_aggregate(query: dict, agg_field: EsFields, page: int, size: int, sort: OrderOptions):
     from_number = (page - 1) * size
     query['size'] = 0
-    sort_field = '_count'
-    sort_order = 'desc'
-    if agg_field == EsFields.article_id:
-        sort_field = 'page_start'
-        sort_order = 'asc'
+    if sort == OrderOptions.Bibcode_desc or sort == OrderOptions.Bibcode_asc:
+        sort_field = '_key'
+    elif sort == OrderOptions.Collection_desc or sort == OrderOptions.Collection_asc:
+        sort_field = '_key'
+    elif sort == OrderOptions.Relevance_desc or sort == OrderOptions.Relevance_asc:
+        sort_field = 'score.sum'
+    
+    if "_desc" in sort.value:
+        sort_order = "desc"
+    else:
+        sort_order = "asc"
+
     query['aggs'] = {   
         "total_count": {
             "cardinality": {
@@ -69,10 +75,11 @@ def append_aggregate(query: dict, agg_field: EsFields, page: int, size: int):
             }
         }
     }
-    if agg_field == EsFields.article_id:
-        query['aggs']['ids']['aggs']['page_start'] = { "min": { "field": "page_number" } }
-    return query
 
+    if sort == OrderOptions.Relevance_desc or sort == OrderOptions.Relevance_asc:
+        query['aggs']['ids']['aggs']['score'] = {"stats" : {"script" : "_score"}}
+
+    return query
 
 def append_highlight(query: dict):
     query['highlight'] = {
@@ -111,13 +118,26 @@ def set_page_search_fields(query: dict) -> dict:
     query["fields"] = ["id", "volume_id", "label", "page_number"]
     return query
 
-def page_os_search(qs: str, page, limit):
+def page_os_search(qs: str, page, limit, sort):
     query = create_query_string_query(qs)
     query = set_page_search_fields(query)
     from_number = (page - 1) * limit
     query['size'] = limit
     query['from'] = from_number
-    query['sort'] = [{'volume_id':{'order': 'asc'}}, {'page_number':{'order':'asc'}} ]
+
+    if sort == OrderOptions.Bibcode_desc or sort == OrderOptions.Bibcode_asc:
+        sort_field = 'article_bibcodes'
+    elif sort == OrderOptions.Collection_desc or sort == OrderOptions.Collection_asc:
+        sort_field = 'volume_id'
+    elif sort == OrderOptions.Relevance_desc or sort == OrderOptions.Relevance_asc:
+        sort_field = '_score'
+    
+    if "_desc" in sort.value:
+        sort_order = "desc"
+    else:
+        sort_order = "asc"
+
+    query['sort'] = [{sort_field:{'order': sort_order}}, {'page_number':{'order':'asc'}} ]
     es_result = es_search(query)
     return es_result
 
@@ -128,8 +148,8 @@ def page_ocr_os_search(collection_id: str, page_number:int):
     es_result = es_search(query)
     return es_result
 
-def aggregate_search(qs: str, aggregate_field, page, limit):
+def aggregate_search(qs: str, aggregate_field, page, limit, sort):
     query = create_query_string_query(qs)
-    query = append_aggregate(query, aggregate_field, page, limit)
+    query = append_aggregate(query, aggregate_field, page, limit, sort)
     es_result = es_search(query)
     return es_result

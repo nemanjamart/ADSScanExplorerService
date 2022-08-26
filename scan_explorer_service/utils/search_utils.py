@@ -43,21 +43,43 @@ query_translations = dict({
     SearchOptions.FullText.value: EsFields.text.value,
 })
 
+class OrderOptions(str, enum.Enum):
+    Relevance_desc = 'relevance_desc'
+    Relevance_asc = 'relevance_asc'
+    Bibcode_desc = 'bibcode_desc'
+    Bibcode_asc = 'bibcode_asc'
+    Collection_desc = 'collection_desc'
+    Collection_asc = 'collection_asc'
+
 def parse_query_args(args):
     qs = re.sub(':\s*', ':', args.get('q', '', str))
     qs_arr = [q for q in shlex.split(qs) if ':' in q]
     qs_dict = {}
+    
     for kv in qs_arr:
         kv_arr = kv.split(':', maxsplit=1)
         if len(kv_arr) == 2:
             qs_dict[kv_arr[0].lower()] = kv_arr[1].strip()
+
     check_query(qs_dict)
+
     for key in qs_dict.keys():
         qs = qs.replace(key, query_translations[key])
     page = args.get('page', 1, int)
     limit = args.get('limit', 10, int)
 
-    return qs, qs_dict, page, limit
+    sort_raw = args.get('sort')
+    sort = parse_sorting_option(sort_raw)
+
+    return qs, qs_dict, page, limit, sort
+
+def parse_sorting_option(sort_input: str):
+    sort = OrderOptions.Bibcode_desc
+    if sort_input:
+        for sort_opt in OrderOptions:
+            if sort_opt.value == sort_input.lower():
+                sort = sort_opt
+    return sort
 
 def check_query(qs_dict: dict):
     """
