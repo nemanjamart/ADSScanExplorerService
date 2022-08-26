@@ -27,6 +27,20 @@ def article_extra(bibcode: str):
         
     return {}
 
+@advertise(scopes=['api'], rate_limit=[300, 3600*24])
+@bp_metadata.route('/article/<string:bibcode>/collection', methods=['GET'])
+def article_collection(bibcode: str):
+    """Route that fetches collection from an article """
+    with current_app.session_scope() as session:
+        article: Article = session.query(Article).filter(Article.bibcode == bibcode).first()
+        first_page : Page = article.pages.first()
+        page_in_collection = first_page.volume_running_page_num
+        
+        if article:
+            return jsonify({'id': article.collection_id, 'selected_page': page_in_collection}), 200
+        else:
+            jsonify(message='Invalid article bibcode'), 400
+
 @advertise(scopes=['ads:scan-explorer'], rate_limit=[300, 3600*24])
 @bp_metadata.route('/article', methods=['PUT'])
 def put_article():
