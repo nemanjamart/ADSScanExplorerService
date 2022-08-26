@@ -2,61 +2,7 @@ from typing import Dict, Iterator, List
 import opensearchpy
 from flask import current_app
 from enum import Enum
-from scan_explorer_service.utils.search_utils import SearchOptions
-
-
-class EsFields(str, Enum):
-    article_id = 'article_bibcodes'
-    article_id_lowercase = 'article_bibcodes_lowercase'
-    volume_id = 'volume_id'
-    volume_id_lowercase = 'volume_id_lowercase'
-    page_id = 'page_id'
-    text = 'text'
-    journal = 'journal'
-    volume = 'volume'
-    page_type = 'page_type'
-    page_number = 'page_number'
-    page_label = 'page_label'
-    page_color = 'page_color'
-    project = 'project'
-
-
-query_translations = dict({
-    SearchOptions.Bibstem.value: lambda val: keyword_search(EsFields.journal.value, val.ljust(5, '.')),
-    SearchOptions.Bibcode.value: lambda val: keyword_search(EsFields.article_id_lowercase.value, val),
-    SearchOptions.Volume.value: lambda val: keyword_search(EsFields.volume.value, val.rjust(4, '0')),
-    SearchOptions.PageType.value: lambda val: keyword_search(EsFields.page_type.value, val),
-    SearchOptions.PageCollection.value: lambda val: keyword_search(EsFields.page_number.value, val),
-    SearchOptions.PageLabel.value: lambda val: text_search(EsFields.page_label.value, val),
-    SearchOptions.PageColor.value: lambda val: keyword_search(EsFields.page_color.value, val),
-    SearchOptions.Project.value: lambda val: keyword_search(EsFields.project.value, val),
-    SearchOptions.FullText.value: lambda val: text_search(EsFields.text.value, val)
-})
-
-def keyword_search(field: str, key: str):
-    if '*' in key:
-        return {
-            "wildcard":{
-                field:{
-                    "value": key
-                }
-            }           
-        }
-    else:
-        return {
-            "term":{
-                field:key
-            }
-        }
-
-def text_search(field: str, text: str):
-    return {
-        "query_string": {
-                "query": text,
-                "default_field": field,
-                "default_operator": "AND"
-            }
-        }
+from scan_explorer_service.utils.search_utils import EsFields
 
 def create_query_string_query(query_string: str):
     query =  {
@@ -69,25 +15,6 @@ def create_query_string_query(query_string: str):
         }
     }
     return query
-
-def create_filter_query(qs_dict: dict):
-
-    query_trans = {key: filter_func for key,
-                   filter_func in query_translations.items() if key in qs_dict.keys()}
-    if len(query_trans) ==  0:
-        raise Exception("No valid keyword specified")
-
-    filters = []
-    for key, filter_func in query_trans.items(): filters.append(filter_func(qs_dict.get(key)))
-    query =  {
-        "query": {
-            "bool": {
-                "must": filters
-            }
-        }
-    }
-    return query
-        
 
 def create_base_query_filter(text: str, filter_field: EsFields, filter_values: List[str]) -> dict:
     query =  {
@@ -184,8 +111,8 @@ def set_page_search_fields(query: dict) -> dict:
     query["fields"] = ["id", "volume_id", "label", "page_number"]
     return query
 
-def page_os_search(qs_dict: Dict, page, limit):
-    query = create_filter_query(qs_dict)
+def page_os_search(qs: str, page, limit):
+    query = create_query_string_query(qs)
     query = set_page_search_fields(query)
     from_number = (page - 1) * limit
     query['size'] = limit
@@ -201,8 +128,8 @@ def page_ocr_os_search(collection_id: str, page_number:int):
     es_result = es_search(query)
     return es_result
 
-def aggregate_search(qs_dict: Dict, aggregate_field, page, limit):
-    query = create_filter_query(qs_dict)
+def aggregate_search(qs: str, aggregate_field, page, limit):
+    query = create_query_string_query(qs)
     query = append_aggregate(query, aggregate_field, page, limit)
     es_result = es_search(query)
     return es_result

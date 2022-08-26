@@ -16,6 +16,33 @@ class SearchOptions(enum.Enum):
     Project = 'project'
     Volume = 'volume'
 
+class EsFields(str, enum.Enum):
+    article_id = 'article_bibcodes'
+    article_id_lowercase = 'article_bibcodes_lowercase'
+    volume_id = 'volume_id'
+    volume_id_lowercase = 'volume_id_lowercase'
+    page_id = 'page_id'
+    text = 'text'
+    journal = 'journal'
+    volume = 'volume2'
+    page_type = 'page_type'
+    page_number = 'page_number'
+    page_label = 'page_label'
+    page_color = 'page_color'
+    project = 'project'
+
+query_translations = dict({
+    SearchOptions.Bibstem.value: EsFields.journal.value,
+    SearchOptions.Bibcode.value: EsFields.article_id_lowercase.value,
+    SearchOptions.Volume.value: EsFields.volume.value,
+    SearchOptions.PageType.value: EsFields.page_type.value,
+    SearchOptions.PageCollection.value: EsFields.page_number.value,
+    SearchOptions.PageLabel.value: EsFields.page_label.value,
+    SearchOptions.PageColor.value: EsFields.page_color.value,
+    SearchOptions.Project.value: EsFields.project.value,
+    SearchOptions.FullText.value: EsFields.text.value,
+})
+
 def parse_query_args(args):
     qs = re.sub(':\s*', ':', args.get('q', '', str))
     qs_arr = [q for q in shlex.split(qs) if ':' in q]
@@ -25,11 +52,12 @@ def parse_query_args(args):
         if len(kv_arr) == 2:
             qs_dict[kv_arr[0].lower()] = kv_arr[1].strip()
     check_query(qs_dict)
-
+    for key in qs_dict.keys():
+        qs = qs.replace(key, query_translations[key])
     page = args.get('page', 1, int)
     limit = args.get('limit', 10, int)
 
-    return qs_dict, page, limit
+    return qs, qs_dict, page, limit
 
 def check_query(qs_dict: dict):
     """
