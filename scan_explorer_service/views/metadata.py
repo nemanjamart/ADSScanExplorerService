@@ -4,7 +4,7 @@ from scan_explorer_service.models import Article, Collection, Page
 from flask_discoverer import advertise
 from scan_explorer_service.utils.search_utils import *
 from scan_explorer_service.views.view_utils import ApiErrors
-from scan_explorer_service.open_search import EsFields, page_os_search, aggregate_search
+from scan_explorer_service.open_search import EsFields, page_os_search, aggregate_search, page_ocr_os_search
 import requests
 
 bp_metadata = Blueprint('metadata', __name__, url_prefix='/metadata')
@@ -135,11 +135,24 @@ def collection_search():
 def page_search():
     """Search for a page using one or some of the available keywords"""
     try:
-        qs_dict, page, limit = parse_query_args(request.args)
-        result = page_os_search(qs_dict, page, limit)
+        qs, qs_dict, page, limit = parse_query_args(request.args)
+        result = page_os_search(qs, page, limit)
         text_query = ''
         if SearchOptions.FullText.value in qs_dict.keys():
             text_query = qs_dict[SearchOptions.FullText.value]
         return jsonify(serialize_os_page_result(result, page, limit, text_query))
+    except Exception as e:
+        return jsonify(message=str(e), type=ApiErrors.SearchError.value), 400
+
+@advertise(scopes=['api'], rate_limit=[300, 3600*24])
+@bp_metadata.route('/page/ocr', methods=['GET'])
+def get_page_ocr():
+    """Get the OCR for a page using it's collection_id and pagenumber"""
+    try:
+        collection_id = request.args.get('collection_id')
+        page_number = request.args.get('page_number')
+        result = page_ocr_os_search(collection_id, page_number)
+        return serialize_os_page_ocr_result(result)
+
     except Exception as e:
         return jsonify(message=str(e), type=ApiErrors.SearchError.value), 400

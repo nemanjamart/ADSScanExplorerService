@@ -99,12 +99,17 @@ def serialize_os_page_result(result: dict, page: int, limit: int, contentQuery):
     return {'page': page, 'pageCount': page_count, 'limit': limit, 'total': total_count, 'query': contentQuery,
         'items': [serialize_os_agg_page_bucket(b) for b in es_buckets]}
 
+def serialize_os_page_ocr_result(result: dict):
+    es_buckets = result['hits']['hits']
+    if len(es_buckets) < 1:
+        raise Exception("No page with those parameters found")
+    return es_buckets[0]['_source']['text']
+
 def serialize_os_agg_collection_bucket(bucket: dict):
     id = bucket['key']
     journal = id[0:5]
     volume = id[5:9]
     return {'id': id, 'journal': journal, 'volume': volume, 'pages': bucket['doc_count']}
-
 
 def serialize_os_collection_result(result: dict, page: int, limit: int, contentQuery):
     total_count = result['aggregations']['total_count']['value']

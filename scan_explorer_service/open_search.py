@@ -58,6 +58,18 @@ def text_search(field: str, text: str):
             }
         }
 
+def create_query_string_query(query_string: str):
+    query =  {
+        "query": {
+            "query_string": {
+                "query": query_string,
+                "default_field": "volume_id",
+                "default_operator": "AND"
+            }
+        }
+    }
+    return query
+
 def create_filter_query(qs_dict: dict):
 
     query_trans = {key: filter_func for key,
@@ -153,19 +165,39 @@ def es_search(query: dict) -> Iterator[str]:
 
 def text_search_highlight(text: str, filter_field: EsFields, filter_values: List[str]):
     base_query = create_base_query_filter(text, filter_field, filter_values)
-    query = append_highlight(base_query)
+    query = set_page_search_fields(base_query)
+    query = append_highlight(query)
     for hit in es_search(query)['hits']['hits']:
         yield {
             "page_id": hit['_source']['page_id'],
             "highlight": hit['highlight']['text']
         }
 
+def set_page_ocr_fields(query: dict) -> dict:
+    if 'fields' in query.keys():
+        query["fields"].append("text")
+    else:
+        query["fields"] = ['text']
+    return query
+
+def set_page_search_fields(query: dict) -> dict:
+    query["fields"] = ["id", "volume_id", "label", "page_number"]
+    return query
+
 def page_os_search(qs_dict: Dict, page, limit):
     query = create_filter_query(qs_dict)
+    query = set_page_search_fields(query)
     from_number = (page - 1) * limit
     query['size'] = limit
     query['from'] = from_number
     query['sort'] = [{'volume_id':{'order': 'asc'}}, {'page_number':{'order':'asc'}} ]
+    es_result = es_search(query)
+    return es_result
+
+def page_ocr_os_search(collection_id: str, page_number:int):
+    qs = EsFields.volume_id_lowercase + ":" + collection_id + " " + EsFields.page_number + ":" + str(page_number)
+    query = create_query_string_query(qs)
+    query = set_page_ocr_fields(query)
     es_result = es_search(query)
     return es_result
 
