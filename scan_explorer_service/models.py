@@ -123,6 +123,7 @@ class Page(Base, Timestamp):
         self.format = kwargs.get('format')
         self.color_type = kwargs.get('color_type')
         self.page_type = kwargs.get('page_type')
+        self.label = kwargs.get('label')
         self.width = kwargs.get('width')
         self.height = kwargs.get('height')
         self.collection_id = kwargs.get('collection_id')
