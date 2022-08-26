@@ -133,7 +133,7 @@ class TestMetadata(TestCaseDatabase):
     def test_query_parsing_sucess(self, OpenSearch):
         es = OpenSearch.return_value
         es.search.return_value = self.open_search_article_nohit_response
-        url = url_for("metadata.article_search", q='bibcode:1 bibstem:2 full:3 page_collection:4 page:5 pagetype:Normal pagecolor:BW project:"PHaEDRA" volume:6')
+        url = url_for("metadata.article_search", q='bibcode:1 bibstem:2 full:3 page_sequence:4 page:5 pagetype:Normal pagecolor:BW project:"PHaEDRA" volume:6')
         r = self.client.get(url)
         self.assertStatus(r, 200)
 
