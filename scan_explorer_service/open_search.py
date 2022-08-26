@@ -124,6 +124,7 @@ def page_os_search(qs: str, page, limit, sort):
     from_number = (page - 1) * limit
     query['size'] = limit
     query['from'] = from_number
+    query['track_total_hits'] = True
 
     if sort == OrderOptions.Bibcode_desc or sort == OrderOptions.Bibcode_asc:
         sort_field = 'article_bibcodes'
