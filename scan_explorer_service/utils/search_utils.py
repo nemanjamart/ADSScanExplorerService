@@ -143,7 +143,7 @@ def serialize_os_agg_page_bucket(bucket: dict):
 
 def serialize_os_page_result(result: dict, page: int, limit: int, contentQuery):
     total_count = result['hits']['total']['value']
-    page_count = int(math.ceil(total_count / limit))    
+    page_count = int(math.ceil(min(total_count,10000) / limit))    
     es_buckets = result['hits']['hits']
 
     return {'page': page, 'pageCount': page_count, 'limit': limit, 'total': total_count, 'query': contentQuery,
