@@ -1,3 +1,4 @@
+from typing import Union
 from flask import Blueprint, current_app, jsonify, request
 from scan_explorer_service.utils.db_utils import article_get_or_create, article_overwrite, collection_overwrite, page_get_or_create, page_overwrite
 from scan_explorer_service.models import Article, Collection, Page
@@ -161,12 +162,26 @@ def page_search():
 @advertise(scopes=['api'], rate_limit=[300, 3600*24])
 @bp_metadata.route('/page/ocr', methods=['GET'])
 def get_page_ocr():
-    """Get the OCR for a page using it's collection_id and pagenumber"""
+    """Get the OCR for a page using it's parents id and page number"""
     try:
-        collection_id = request.args.get('collection_id')
-        page_number = request.args.get('page_number')
-        result = page_ocr_os_search(collection_id, page_number)
-        return serialize_os_page_ocr_result(result)
+        id = request.args.get('id')
+        page_number = request.args.get('page_number', 1, int)
+
+        with current_app.session_scope() as session:
+            item: Union[Article, Collection] = (
+                    session.query(Article).filter(Article.id == id).one_or_none()
+                    or session.query(Collection).filter(Collection.id == id).one_or_none())
+
+            if item is None:
+                return jsonify(message=f'Item with ID {id} was not found'), 404 
+            elif isinstance(item, Article):
+                collection_id = item.collection_id
+                page_number = page_number + item.pages.first().volume_running_page_num - 1
+            elif isinstance(item, Collection):
+                collection_id = item.id
+                
+            result = page_ocr_os_search(collection_id, page_number)
+            return serialize_os_page_ocr_result(result)
 
     except Exception as e:
         return jsonify(message=str(e), type=ApiErrors.SearchError.value), 400
