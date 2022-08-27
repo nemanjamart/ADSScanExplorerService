@@ -1,11 +1,12 @@
+from typing import Union
 from flask import Blueprint, Response, current_app, request, stream_with_context, jsonify
 from flask_discoverer import advertise
 from urllib import parse as urlparse
 from PIL import Image
 from io import BytesIO
-
+import math
 import requests
-from scan_explorer_service.models import Page, Article
+from scan_explorer_service.models import Collection, Page, Article
 from scan_explorer_service.utils.db_utils import item_thumbnail
 from scan_explorer_service.utils.utils import url_for_proxy
 
@@ -56,25 +57,35 @@ def image_proxy_thumbnail():
 @advertise(scopes=['api'], rate_limit=[5000, 3600*24])
 @bp_proxy.route('/pdf', methods=['GET'])
 def pdf_save():
-    """Proxy in between the image server and the user"""
+    """Generate a PDF from pages"""
     try:
-        collection_id = request.args.get('collection_id')
-        article_id = request.args.get('article_id')
-        page_start = request.args.get('page_start')
-        page_end = request.args.get('page_end')
+        id = request.args.get('id')
+        page_start = request.args.get('page_start', 1, int)
+        page_end = request.args.get('page_end', math.inf, int)
         dpi = request.args.get('dpi')
         
         @stream_with_context
-        def loop_image_io(collection, page_start, page_end):
+        def loop_image_io(id, page_start, page_end):
 
             img_io = BytesIO()
             append = False
             start_byte = 0
             with current_app.session_scope() as session:
-                if article_id:
-                    query = session.query(Page).filter(Page.articles.any(Article.id == article_id)).order_by(Page.volume_running_page_num)
-                elif collection_id:
-                    query = session.query(Page).filter(Page.collection_id == collection_id, Page.volume_running_page_num >= page_start, Page.volume_running_page_num <= page_end).order_by(Page.volume_running_page_num)
+                item: Union[Article, Collection] = (
+                            session.query(Article).filter(Article.id == id).one_or_none()
+                            or session.query(Collection).filter(Collection.id == id).one_or_none())
+
+                if isinstance(item, Article):
+                    q = session.query(Article).filter(Article.id == item.id).one_or_none()
+                    start_page = q.pages.first().volume_running_page_num
+                    query = session.query(Page).filter(Page.articles.any(Article.id == item.id), 
+                        Page.volume_running_page_num  >= page_start + start_page - 1, 
+                        Page.volume_running_page_num  <= page_end + start_page - 1).order_by(Page.volume_running_page_num)
+                elif isinstance(item, Collection):
+                    query = session.query(Page).filter(Page.collection_id == item.id, 
+                        Page.volume_running_page_num >= page_start, 
+                        Page.volume_running_page_num <= page_end).order_by(Page.volume_running_page_num)
+                
                 for page in query.all():
                     image_url = page.image_url + "/full/" + str(int(page.height/3.0)) + ",/0/default.png"
                     image = Image.open(requests.get(image_url, stream=True).raw)
@@ -84,6 +95,7 @@ def pdf_save():
                     append = True
                     img_io.seek(start_byte)
                     yield img_io.read()
-        return Response(loop_image_io(collection_id, page_start, page_end), mimetype='application/pdf')
+
+        return Response(loop_image_io(id, page_start, page_end), mimetype='application/pdf')
     except Exception as e:
         return jsonify(Message=str(e)), 400
