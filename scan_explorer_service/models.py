@@ -12,7 +12,7 @@ Base = declarative_base()
 class PageColor(enum.Enum):
     """Page Color Type"""
     BW = 1
-    Greyscale = 2
+    Grayscale = 2
     Color = 3
 
 
