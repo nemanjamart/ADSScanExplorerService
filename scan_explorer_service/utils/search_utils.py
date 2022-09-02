@@ -24,7 +24,7 @@ class EsFields(str, enum.Enum):
     page_id = 'page_id'
     text = 'text'
     journal = 'journal'
-    volume = 'volume2'
+    volume = 'volume_int'
     page_type = 'page_type'
     page_number = 'page_number'
     page_label = 'page_label'
@@ -53,24 +53,31 @@ class OrderOptions(str, enum.Enum):
 
 def parse_query_args(args):
     qs = re.sub(':\s*', ':', args.get('q', '', str))
-    qs_arr = [q for q in shlex.split(qs) if ':' in q]
+    qs_arr = [q for q in shlex.split(qs, posix=False) if ':' in q]
     qs_dict = {}
+    qs_only_free = qs
     
     for kv in qs_arr:
         kv_arr = kv.split(':', maxsplit=1)
+        #Remove all parameter from the original search to be able to handle the free search
+        qs_only_free = qs_only_free.replace(kv, "")
         if len(kv_arr) == 2:
-            qs_dict[kv_arr[0].lower()] = kv_arr[1].strip()
+            qs_dict[kv_arr[0]] = kv_arr[1].strip()
 
     check_query(qs_dict)
+    #Adds a () around each free search to force OS to look for each individual entry against all default fields
+    for parameter in re.split('\s+',qs_only_free):
+        if parameter.upper() not in ['AND', 'OR', '']:
+            qs = qs.replace(str(parameter), "(" + str(parameter) + ")")
 
     for key in qs_dict.keys():
+        #Translate input on the keys to the dedicated OS columns
         qs = qs.replace(key, query_translations[key])
     page = args.get('page', 1, int)
     limit = args.get('limit', 10, int)
 
     sort_raw = args.get('sort')
     sort = parse_sorting_option(sort_raw)
-
     return qs, qs_dict, page, limit, sort
 
 def parse_sorting_option(sort_input: str):
@@ -100,7 +107,7 @@ def check_page_type(qs_dict: dict):
             return
         # Check lowercased and updated to cased
         for p in PageType:
-            if page_type.lower() == p.name.lower():
+            if page_type.replace('"','').lower() == p.name.lower():
                 qs_dict[SearchOptions.PageType.value] = p.name
                 return
         raise Exception("%s is not a valid page type, %s is possible choices"% (page_type, str(valid_types)))
@@ -113,7 +120,7 @@ def check_page_color(qs_dict: dict):
             return
         # Check lowercased and updated to cased
         for p in PageColor:
-            if page_color.lower() == p.name.lower():
+            if page_color.replace('"','').lower() == p.name.lower():
                 qs_dict[SearchOptions.PageColor.value] = p.name
                 return
         raise Exception("%s is not a valid page color, %s is possible choices"% (page_color, str(valid_types)))
@@ -122,7 +129,7 @@ def check_project(qs_dict: dict):
     if SearchOptions.Project.value in qs_dict.keys():
         project = qs_dict[SearchOptions.Project.value]
         valid_types = ['PHaEDRA', 'Historical Literature', 'Microfilm Scanning']
-        if project in valid_types:
+        if project.replace('"','') in valid_types:
             qs_dict[SearchOptions.Project.value] =  project.replace('Microfilm Scanning', 'Historical Literature')
             return
         # Check lowercased and updated to cased

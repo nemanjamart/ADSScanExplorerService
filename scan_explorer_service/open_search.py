@@ -8,7 +8,7 @@ def create_query_string_query(query_string: str):
         "query": {
             "query_string": {
                 "query": query_string,
-                "default_field": "volume_id",
+                "fields": ["article_bibcodes", "journal", "volume_id_lowercase", "volume"],
                 "default_operator": "AND"
             }
         }
@@ -108,14 +108,14 @@ def text_search_highlight(text: str, filter_field: EsFields, filter_values: List
         }
 
 def set_page_ocr_fields(query: dict) -> dict:
-    if 'fields' in query.keys():
-        query["fields"].append("text")
+    if '_source' in query.keys():
+        query["_source"]["include"].append("text")
     else:
-        query["fields"] = ['text']
+        query["_source"] = {"include": ["text"]}
     return query
 
 def set_page_search_fields(query: dict) -> dict:
-    query["fields"] = ["id", "volume_id", "label", "page_number"]
+    query["_source"] = {"include": ["page_id", "volume_id", "page_label", "page_number"]}
     return query
 
 def page_os_search(qs: str, page, limit, sort):
