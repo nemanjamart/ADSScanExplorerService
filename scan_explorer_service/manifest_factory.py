@@ -48,6 +48,13 @@ class ManifestFactoryExtended(ManifestFactory):
         if(page.id in canvas_dict.keys()):
             return canvas_dict[page.id]
         canvas: Canvas = self.canvas(ident=str(page.id), label=f'p. {page.label}')
+
+        if len(page.articles) > 0:
+            metadata = {
+                'Abstract': ''.join(f'<a href="https://ui.adsabs.harvard.edu/abs/{str(x.bibcode)}/abstract">{str(x.bibcode)}</a>' for x in page.articles)
+            }
+            canvas.set_metadata(metadata)
+
         canvas.height = page.height
         canvas.width = page.width
         annotation = self.create_image_annotation(page)
