@@ -50,6 +50,13 @@ Run tests
 python -m unittest scan_explorer_service/tests/test_*.py
 ```
 
+Check test coverage
+
+```
+coverage run --omit */site-packages/* -m unittest scan_explorer_service/tests/test_*.py
+coverage report
+```
+
 ## Documentation
 
 Generate the appmap definitions
