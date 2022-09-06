@@ -53,7 +53,17 @@ class OrderOptions(str, enum.Enum):
 
 def parse_query_args(args):
     qs = re.sub(':\s*', ':', args.get('q', '', str))
-    qs_arr = [q for q in shlex.split(qs, posix=False) if ':' in q]
+    qs, qs_dict = parse_query_string(qs)
+
+    page = args.get('page', 1, int)
+    limit = args.get('limit', 10, int)
+    sort_raw = args.get('sort')
+    sort = parse_sorting_option(sort_raw)
+    return qs, qs_dict, page, limit, sort
+
+def parse_query_string(qs):
+    qs_to_split = qs.replace('[', '"[').replace(']',']"')
+    qs_arr = [q for q in shlex.split(qs_to_split) if ':' in q]
     qs_dict = {}
     qs_only_free = qs
     
@@ -63,22 +73,20 @@ def parse_query_args(args):
         qs_only_free = qs_only_free.replace(kv, "")
         if len(kv_arr) == 2:
             qs_dict[kv_arr[0]] = kv_arr[1].strip()
+            #If the option have qutoes we remove them from the free. Previous removal would than have failed
+            alt_kv = kv_arr[0] + ':"' + kv_arr[1] + '"'
+            qs_only_free = qs_only_free.replace(alt_kv, '')
 
-    check_query(qs_dict)
     #Adds a () around each free search to force OS to look for each individual entry against all default fields
-    for parameter in re.split('\s+',qs_only_free):
+    for parameter in re.split('\s+', qs_only_free):
         if parameter.upper() not in ['AND', 'OR', '']:
             qs = qs.replace(str(parameter), "(" + str(parameter) + ")")
 
     for key in qs_dict.keys():
         #Translate input on the keys to the dedicated OS columns
         qs = qs.replace(key, query_translations[key])
-    page = args.get('page', 1, int)
-    limit = args.get('limit', 10, int)
 
-    sort_raw = args.get('sort')
-    sort = parse_sorting_option(sort_raw)
-    return qs, qs_dict, page, limit, sort
+    return qs, qs_dict
 
 def parse_sorting_option(sort_input: str):
     sort = OrderOptions.Bibcode_desc
