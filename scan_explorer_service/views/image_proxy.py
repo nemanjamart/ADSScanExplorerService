@@ -5,6 +5,7 @@ from urllib import parse as urlparse
 from PIL import Image
 from io import BytesIO
 import math
+import sys
 import requests
 from scan_explorer_service.models import Collection, Page, Article
 from scan_explorer_service.utils.db_utils import item_thumbnail
@@ -63,13 +64,17 @@ def pdf_save():
         page_start = request.args.get('page_start', 1, int)
         page_end = request.args.get('page_end', math.inf, int)
         dpi = request.args.get('dpi')
-        
+
+        memory_limit = current_app.config.get("IMAGE_PDF_MEMORY_LIMIT")
+        page_limit = current_app.config.get("IMAGE_PDF_PAGE_LIMIT")
+
         @stream_with_context
         def loop_image_io(id, page_start, page_end):
 
             img_io = BytesIO()
             append = False
             start_byte = 0
+            n_pages = 0
             with current_app.session_scope() as session:
                 item: Union[Article, Collection] = (
                             session.query(Article).filter(Article.id == id).one_or_none()
@@ -87,11 +92,20 @@ def pdf_save():
                         Page.volume_running_page_num <= page_end).order_by(Page.volume_running_page_num)
                 
                 for page in query.all():
+                    n_pages += 1
                     image_url = page.image_url + "/full/" + str(int(page.height/3.0)) + ",/0/default.png"
-                    image = Image.open(requests.get(image_url, stream=True).raw)
+                    path = urlparse.urlparse(image_url).path
+                    remove = urlparse.urlparse(url_for_proxy('proxy.image_proxy', path='')).path
+                    path = path.replace(remove, '')
+                    image = Image.open(BytesIO(image_proxy(path).get_data()))
                     im = image.convert('RGB')
                     start_byte = img_io.tell()
                     im.save(img_io, save_all=True, format='pdf', append=append)
+                    if sys.getsizeof(img_io) > memory_limit:
+                        break
+                    if  n_pages > page_limit:
+                        break   
+
                     append = True
                     img_io.seek(start_byte)
                     yield img_io.read()
