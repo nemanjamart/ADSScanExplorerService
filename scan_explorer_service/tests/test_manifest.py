@@ -1,4 +1,5 @@
-from flask import url_for, jsonify
+from flask import url_for
+from unittest.mock import patch
 import unittest
 from scan_explorer_service.models import Collection, Page, Article
 from scan_explorer_service.tests.base import TestCaseDatabase
@@ -60,6 +61,22 @@ class TestManifest(TestCaseDatabase):
         data = json.loads(r.data)
         self.assertStatus(r, 200)
         self.assertEqual(data['@type'], 'sc:Canvas')
+
+    @patch('opensearchpy.OpenSearch')
+    def test_search_article_with_highlight(self, OpenSearch):
+        open_search_highlight_response = {"hits":{"total":{"value":1,"relation":"eq"},"max_score":None,"hits":[{'_source':{'page_id':self.page.id, 'volume_id':self.page.collection_id, 'page_label':self.page.label, 'page_number': self.page.volume_running_page_num}, "highlight":{'text':'some <b>highlighted</b> text'}}]}}
+        article_id = self.article.id
+        es = OpenSearch.return_value
+        es.search.return_value = open_search_highlight_response
+
+        url = url_for("manifest.search", id=article_id, q='text')
+        r = self.client.get(url)
+        data = json.loads(r.data)
+        self.assertStatus(r, 200)
+        self.assertEqual(data['@type'], 'sc:AnnotationList')
+        call_args, call_kwargs = es.search.call_args
+        expected_query = {'query': {'bool': {'must': {'query_string': {'query': 'text article_bibcodes:' + article_id, 'default_field': 'text', 'default_operator': 'AND'}}}}, '_source': {'include': ['page_id', 'volume_id', 'page_label', 'page_number']}, 'highlight': {'fields': {'text': {}}, 'type': 'unified'}}
+        self.assertEqual(expected_query, call_kwargs.get('body'))
 
 
 if __name__ == '__main__':
