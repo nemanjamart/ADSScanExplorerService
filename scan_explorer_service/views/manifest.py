@@ -72,7 +72,7 @@ def search(id: str):
             annotation_list.resources = []
             
             es_field = EsFields.article_id if isinstance(item, Article) else EsFields.volume_id
-            results = text_search_highlight(query, es_field, [item.id])
+            results = text_search_highlight(query, es_field, item.id)
 
             for res in results:
                 annotation = annotation_list.annotation(res['page_id'])

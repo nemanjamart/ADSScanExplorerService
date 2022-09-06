@@ -15,28 +15,6 @@ def create_query_string_query(query_string: str):
     }
     return query
 
-def create_base_query_filter(text: str, filter_field: EsFields, filter_values: List[str]) -> dict:
-    query =  {
-        "query": {
-            "bool": {
-                "must": {
-                    "query_string": {
-                        "query": text,
-                        "default_field": "text",
-                        "default_operator": "AND"
-                    }
-                },
-            }
-        }
-    }
-    if filter_field:
-        query["query"]["bool"]["filter"] = {
-                "terms": {
-                    filter_field.value: filter_values
-                }
-            }
-    return query
- 
 def append_aggregate(query: dict, agg_field: EsFields, page: int, size: int, sort: OrderOptions):
     from_number = (page - 1) * size
     query['size'] = 0
@@ -97,8 +75,23 @@ def es_search(query: dict) -> Iterator[str]:
         'OPEN_SEARCH_INDEX'), body=query)
     return resp
 
-def text_search_highlight(text: str, filter_field: EsFields, filter_values: List[str]):
-    base_query = create_base_query_filter(text, filter_field, filter_values)
+def text_search_highlight(text: str, filter_field: EsFields, filter_value: str):
+    query_string = text
+    if filter_field:
+        query_string += " " + filter_field.value + ":" + str(filter_value)
+    base_query =  {
+        "query": {
+            "bool": {
+                "must": {
+                    "query_string": {
+                        "query": query_string,
+                        "default_field": "text",
+                        "default_operator": "AND"
+                    }
+                },
+            }
+        }
+    }
     query = set_page_search_fields(base_query)
     query = append_highlight(query)
     for hit in es_search(query)['hits']['hits']:
