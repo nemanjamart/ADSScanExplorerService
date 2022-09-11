@@ -188,11 +188,12 @@ def serialize_os_agg_article_bucket(bucket: dict):
     id = bucket['key']
     return {'id': id, 'bibcode': id, 'pages': bucket['doc_count']}
 
-def serialize_os_article_result(result: dict, page: int, limit: int, contentQuery = ''):
+def serialize_os_article_result(result: dict, page: int, limit: int, contentQuery = '', extra_col_count = 0, extra_page_count = 0):
     total_count = result['aggregations']['total_count']['value']
     page_count = int(math.ceil(total_count / limit))    
     es_buckets = result['aggregations']['ids']['buckets']
 
     return {'page': page, 'pageCount': page_count, 'limit': limit, 'total': total_count, 'query': contentQuery,
+        'extra_collection_count': extra_col_count, 'extra_page_count': extra_page_count,
         'items': [serialize_os_agg_article_bucket(b) for b in es_buckets]}
 
