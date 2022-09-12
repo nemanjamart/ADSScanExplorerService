@@ -2,7 +2,7 @@ from typing import Union
 from flask import Blueprint, Response, current_app, request, stream_with_context, jsonify
 from flask_discoverer import advertise
 from urllib import parse as urlparse
-from PIL import Image
+import img2pdf
 from io import BytesIO
 import math
 import sys
@@ -63,18 +63,16 @@ def pdf_save():
         id = request.args.get('id')
         page_start = request.args.get('page_start', 1, int)
         page_end = request.args.get('page_end', math.inf, int)
-        dpi = request.args.get('dpi')
-
+        dpi = request.args.get('dpi', 600, int)
+        dpi = min(dpi,600)
+        scaling = float(dpi)/ 600
         memory_limit = current_app.config.get("IMAGE_PDF_MEMORY_LIMIT")
         page_limit = current_app.config.get("IMAGE_PDF_PAGE_LIMIT")
 
         @stream_with_context
-        def loop_image_io(id, page_start, page_end):
-
-            img_io = BytesIO()
-            append = False
-            start_byte = 0
+        def loop_images(id, page_start, page_end):
             n_pages = 0
+            memory_sum = 0
             with current_app.session_scope() as session:
                 item: Union[Article, Collection] = (
                             session.query(Article).filter(Article.id == id).one_or_none()
@@ -90,26 +88,25 @@ def pdf_save():
                     query = session.query(Page).filter(Page.collection_id == item.id, 
                         Page.volume_running_page_num >= page_start, 
                         Page.volume_running_page_num <= page_end).order_by(Page.volume_running_page_num)
-                
+                else:
+                    raise Exception("ID: " + id + " not found")
                 for page in query.all():
                     n_pages += 1
-                    image_url = page.image_url + "/full/" + str(int(page.height/3.0)) + ",/0/default.png"
+                    if n_pages > page_limit:
+                        break
+                    if memory_sum > memory_limit:
+                        break
+                    size = 'full'
+                    if dpi != 600:
+                        size = str(int(page.width*scaling))+ ","
+                    image_url = page.image_url + "/full/" + size + "/0/default.tif"
                     path = urlparse.urlparse(image_url).path
                     remove = urlparse.urlparse(url_for_proxy('proxy.image_proxy', path='')).path
                     path = path.replace(remove, '')
-                    image = Image.open(BytesIO(image_proxy(path).get_data()))
-                    im = image.convert('RGB')
-                    start_byte = img_io.tell()
-                    im.save(img_io, save_all=True, format='pdf', append=append)
-                    if sys.getsizeof(img_io) > memory_limit:
-                        break
-                    if  n_pages > page_limit:
-                        break   
+                    im_data = image_proxy(path).get_data()
+                    memory_sum += sys.getsizeof(im_data)
+                    yield im_data
 
-                    append = True
-                    img_io.seek(start_byte)
-                    yield img_io.read()
-
-        return Response(loop_image_io(id, page_start, page_end), mimetype='application/pdf')
+        return Response(img2pdf.convert([im for im in loop_images(id, page_start, page_end)]), mimetype='application/pdf')
     except Exception as e:
         return jsonify(Message=str(e)), 400
