@@ -18,13 +18,16 @@ def article_extra(bibcode: str):
     auth_token = current_app.config.get('ADS_SEARCH_SERVICE_TOKEN')
     ads_search_service = current_app.config.get('ADS_SEARCH_SERVICE_URL')
     if auth_token and ads_search_service:
-        params = {'q': f'bibcode:{bibcode}', 'fl':'title,author'}   
-        headers = {'Authorization': f'Bearer {auth_token}'}
-        response = requests.get(ads_search_service, params, headers=headers).json()
-        docs = response.get('response').get('docs')
+        try:
+            params = {'q': f'bibcode:{bibcode}', 'fl':'title,author'}   
+            headers = {'Authorization': f'Bearer {auth_token}'}
+            response = requests.get(ads_search_service, params, headers=headers).json()
+            docs = response.get('response').get('docs')
 
-        if docs:
-            return docs[0]
+            if docs:
+                return docs[0]
+        except:
+            return jsonify(message='Failed to retrieve external ADS article metadata'), 500
         
     return {}
 
