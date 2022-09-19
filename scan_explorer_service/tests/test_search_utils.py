@@ -34,6 +34,9 @@ class TestSearchUtils(TestCaseDatabase):
         final_query, _ = parse_query_string('volume:[1 TO 5]')
         self.assertEqual(final_query, 'volume_int:[1 TO 5]')
 
+        final_query, _ = parse_query_string('PageColor:grAYsCaLe')
+        self.assertEqual(final_query, 'page_color:Grayscale')
+
 
 if __name__ == '__main__':
     unittest.main()

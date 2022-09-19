@@ -72,11 +72,12 @@ def parse_query_string(qs):
         #Remove all parameter from the original search to be able to handle the free search
         qs_only_free = qs_only_free.replace(kv, "")
         if len(kv_arr) == 2:
-            qs_dict[kv_arr[0]] = kv_arr[1].strip()
+            qs_dict[kv_arr[0].lower()] = kv_arr[1].strip()
             #If the option have qutoes we remove them from the free. Previous removal would than have failed
             alt_kv = kv_arr[0] + ':"' + kv_arr[1] + '"'
             qs_only_free = qs_only_free.replace(alt_kv, '')
 
+    check_query(qs_dict)
     #Adds a () around each free search to force OS to look for each individual entry against all default fields
     for parameter in re.split('\s+', qs_only_free):
         if parameter.upper() not in ['AND', 'OR', '']:
@@ -84,7 +85,11 @@ def parse_query_string(qs):
 
     for key in qs_dict.keys():
         #Translate input on the keys to the dedicated OS columns
-        qs = qs.replace(key, query_translations[key])
+        insensitive_replace = re.compile(re.escape(key), re.IGNORECASE)
+        qs = insensitive_replace.sub(query_translations[key.lower()], qs)
+
+        insensitive_replace = re.compile(re.escape(qs_dict[key]), re.IGNORECASE)
+        qs = insensitive_replace.sub(qs_dict[key], qs)
 
     return qs, qs_dict
 
