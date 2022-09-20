@@ -68,7 +68,7 @@ class ManifestFactoryExtended(ManifestFactory):
         image: Image = annotation.image(
             ident=page.image_path, label=f'p. {page.label}', iiif=True)
 
-        image.id = image.id.replace('/default.jpg', '/default.tif')
+        image.id = image.id.replace(f'/{page.image_color_quality}.jpg', f'/{page.image_color_quality}.tif')
 
         image.format = page.format
         image.height = page.height

@@ -165,7 +165,18 @@ class Page(Base, Timestamp):
 
     @property
     def thumbnail_url(self):
-        return f'{self.image_url}/square/480,480/0/default.jpg'
+        return f'{self.image_url}/square/480,480/0/{self.image_color_quality}.jpg'
+
+    @property
+    def image_color_quality(self):
+        if self.color_type == PageColor.BW:
+            return "bitonal"
+        elif self.color_type == PageColor.Grayscale:
+            return "gray"
+        elif self.color_type == PageColor.Color:
+            return "color"
+        else:
+            return "default"
 
     @property
     def serialized(self):
