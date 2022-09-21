@@ -99,7 +99,7 @@ def pdf_save():
                     size = 'full'
                     if dpi != 600:
                         size = str(int(page.width*scaling))+ ","
-                    image_url = page.image_url + "/full/" + size + f"/0/{page.image_color_quality}.png"
+                    image_url = page.image_url + "/full/" + size + f"/0/{page.image_color_quality}.tif"
                     path = urlparse.urlparse(image_url).path
                     remove = urlparse.urlparse(url_for_proxy('proxy.image_proxy', path='')).path
                     path = path.replace(remove, '')
